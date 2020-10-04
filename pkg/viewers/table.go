@@ -7,7 +7,7 @@ import (
 )
 
 type Table interface {
-	Fields(image.Rectangle, resources.Resources) Fields
+	Fields(resources.Resources, image.Rectangle) Fields
 }
 
 type Fields struct {
@@ -18,7 +18,10 @@ type Fields struct {
 
 type EmptyTable struct{}
 
-func (*EmptyTable) Fields(rect image.Rectangle, _ resources.Resources) Fields {
+func (*EmptyTable) Fields(
+	_ resources.Resources,
+	rect image.Rectangle,
+) Fields {
 	return Fields{
 		Headers: []string{"message"},
 		Widths:  []int{rect.Dx() - 1},
@@ -28,7 +31,10 @@ func (*EmptyTable) Fields(rect image.Rectangle, _ resources.Resources) Fields {
 
 type ResourceTable struct{}
 
-func (*ResourceTable) Fields(rect image.Rectangle, resources resources.Resources) Fields {
+func (*ResourceTable) Fields(
+	data resources.Resources,
+	rect image.Rectangle,
+) Fields {
 	headers := []string{
 		"metadata.name", "usage.cpu", "usage.memory",
 	}
@@ -37,12 +43,22 @@ func (*ResourceTable) Fields(rect image.Rectangle, resources resources.Resources
 		base / 2, base / 4, base / 4,
 	}
 	var rows [][]string
-	nodes := resources.SortedNodes()
-	for _, node := range nodes {
-		usage := resources[node].Usage
+	for _, node := range data.SortedNodes() {
+		usage := data[node].Usage
 		rows = append(rows, []string{
 			node, usage.Cpu().String(), usage.Memory().String(),
 		})
+		for _, pod := range data.SortedPods(node) {
+			rows = append(rows, []string{
+				pod, usage.Cpu().String(), usage.Memory().String(),
+			})
+			for _, container := range data.SortedContainers(node, pod) {
+				usage = data[node].Pods[pod].Containers[container].Usage
+				rows = append(rows, []string{
+					container, usage.Cpu().String(), usage.Memory().String(),
+				})
+			}
+		}
 	}
 	return Fields{
 		Headers: headers,

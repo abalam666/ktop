@@ -99,7 +99,7 @@ func (m *Monitor) Sync() error {
 		} else {
 			viewer = &viewers.EmptyTable{}
 		}
-		fields := viewer.Fields(m.ResourceTable.Inner, data)
+		fields := viewer.Fields(data, m.ResourceTable.Inner)
 		m.ResourceTable.Header = fields.Headers
 		m.ResourceTable.ColumnWidths = fields.Widths
 		m.ResourceTable.Rows = fields.Rows

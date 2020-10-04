@@ -109,7 +109,7 @@ func (self *Table) cursorBottom() int {
 }
 
 func (self *Table) bottom() int {
-	return self.topRow + self.Inner.Dy() - 1
+	return self.topRow + self.Inner.Dy() - 1 - spaceSizeBetweenBorderAndRowsWidth
 }
 
 func (self *Table) scroll(i int) {

@@ -14,56 +14,44 @@ import (
 	"k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
-type Resources map[string]NodeResource
+type Resources map[string]*NodeResource
 
 func (r Resources) SortedNodes() []string {
-	var (
-		i   int
-		res []string = make([]string, len(r))
-	)
+	var res []string
 	for k := range r {
-		res[i] = k
-		i++
+		res = append(res, k)
 	}
 	sort.Strings(res)
 	return res
 }
 
 func (r Resources) SortedPods(node string) []string {
-	var (
-		i   int
-		res []string = make([]string, len(r))
-	)
+	var res []string
 	for k := range r[node].Pods {
-		res[i] = k
-		i++
+		res = append(res, k)
 	}
 	sort.Strings(res)
 	return res
 }
 
 func (r Resources) SortedContainers(node, pod string) []string {
-	var (
-		i   int
-		res []string = make([]string, len(r))
-	)
+	var res []string
 	for k := range r[node].Pods[pod].Containers {
-		res[i] = k
-		i++
+		res = append(res, k)
 	}
 	sort.Strings(res)
 	return res
 }
 
 type NodeResource struct {
-	Pods        map[string]PodResource
+	Pods        map[string]*PodResource
 	Capacity    corev1.ResourceList
 	Allocatable corev1.ResourceList
 	Usage       corev1.ResourceList
 }
 
 type PodResource struct {
-	Containers map[string]ContainerResource
+	Containers map[string]*ContainerResource
 	Usage      corev1.ResourceList
 }
 
@@ -78,7 +66,7 @@ func FetchResources(
 	nodeQuery, podQuery, containerQuery *regexp.Regexp,
 ) (Resources, error) {
 
-	resources := make(Resources)
+	data := make(Resources)
 
 	// get nodes and their metrics
 	nodes, err := clientset.CoreV1().Nodes().List(
@@ -104,11 +92,13 @@ func FetchResources(
 	nodeMetrics.Items = matchNodes(nodeQuery, nodeMetrics.Items)
 	for _, metric := range nodeMetrics.Items {
 		nodeStatus := getNodeStatus(metric.Name, nodes.Items)
-		resources[metric.Name] = NodeResource{
+		data[metric.Name] = &NodeResource{
 			Capacity:    nodeStatus.Capacity,
 			Allocatable: nodeStatus.Allocatable,
 			Usage:       metric.Usage,
 		}
+		// avoid panic: assignment to entry in nil map
+		data[metric.Name].Pods = make(map[string]*PodResource)
 	}
 
 	// get pods and their metrics
@@ -136,7 +126,7 @@ func FetchResources(
 	for _, podMetric := range podMetrics.Items {
 		node := getAssignedNode(podMetric.Name, pods.Items)
 		// it sometimes cannot get nodes because of the filters by `matchNodes`.
-		if _, ok := resources[node]; !ok {
+		if _, ok := data[node]; !ok {
 			continue
 		}
 
@@ -147,23 +137,25 @@ func FetchResources(
 			memoryperpod.Add(*containerMetric.Usage.Memory())
 			containerMetric.Usage.Storage()
 		}
-		resources[node].Pods[podMetric.Name] = PodResource{
+		data[node].Pods[podMetric.Name] = &PodResource{
 			Usage: corev1.ResourceList{
 				corev1.ResourceCPU:    cpuperpod,
 				corev1.ResourceMemory: memoryperpod,
 			},
 		}
+		// avoid panic: assignment to entry in nil map
+		data[node].Pods[podMetric.Name].Containers = make(map[string]*ContainerResource)
 
 		// but to search them by a given query is required on viewing.
 		podMetric.Containers = matchContainers(containerQuery, podMetric.Containers)
 		for _, containerMetric := range podMetric.Containers {
-			resources[node].Pods[podMetric.Name].Containers[containerMetric.Name] = ContainerResource{
+			data[node].Pods[podMetric.Name].Containers[containerMetric.Name] = &ContainerResource{
 				Usage: containerMetric.Usage,
 			}
 		}
 	}
 
-	return resources, nil
+	return data, nil
 }
 
 func matchNodes(query *regexp.Regexp, nodes []metricsv1beta1.NodeMetrics) []metricsv1beta1.NodeMetrics {
@@ -197,7 +189,7 @@ func matchPods(query *regexp.Regexp, pods []metricsv1beta1.PodMetrics) []metrics
 
 func getAssignedNode(target string, pods []corev1.Pod) string {
 	for _, pod := range pods {
-		if target == pod.Spec.NodeName {
+		if target == pod.Name {
 			return pod.Spec.NodeName
 		}
 	}
