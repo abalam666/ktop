@@ -1,9 +1,13 @@
 package main
 
 import (
+	"os"
+
 	"github.com/ynqa/ktop/cmd"
 )
 
 func main() {
-	cmd.Execute()
+	if err := cmd.New().Execute(); err != nil {
+		os.Exit(1)
+	}
 }

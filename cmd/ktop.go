@@ -10,42 +10,26 @@ import (
 
 	"github.com/gizak/termui/v3"
 	"github.com/spf13/cobra"
-
+	"github.com/ynqa/ktop/pkg/monitor"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-	"github.com/ynqa/ktop/pkg/ktop"
-	"github.com/ynqa/ktop/pkg/kube"
-	"github.com/ynqa/ktop/pkg/ui"
+	"k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
-const (
-	logoStr = `
-__  __    ______   ______     ______  
-/\ \/ /   /\__  _\ /\  __ \   /\  == \ 
-\ \  _"-. \/_/\ \/ \ \ \/\ \  \ \  _-/ 
- \ \_\ \_\   \ \_\  \ \_____\  \ \_\   
-  \/_/\/_/    \/_/   \/_____/   \/_/   																			
-`
-	hintStr = `
-<q>, <C-c>      Quit
-<Up>            Up
-<Down>          Down
-<Right>, <Left> Switch Table Mode
-`
-)
+type ktop struct {
+	mu sync.RWMutex
 
-type ktopCmd struct {
-	k8sFlags       *genericclioptions.ConfigFlags
 	interval       time.Duration
 	nodeQuery      string
 	podQuery       string
 	containerQuery string
-	renderMutex    sync.RWMutex
+
+	kubeFlags *genericclioptions.ConfigFlags
 }
 
-func newKtopCmd() *cobra.Command {
-	ktop := ktopCmd{}
+func New() *cobra.Command {
+	ktop := ktop{}
 	cmd := &cobra.Command{
 		Use:   "ktop",
 		Short: "Kubernetes monitoring dashboard on terminal",
@@ -79,32 +63,24 @@ func newKtopCmd() *cobra.Command {
 		".*",
 		"container query",
 	)
-	ktop.k8sFlags = genericclioptions.NewConfigFlags(false)
-	ktop.k8sFlags.AddFlags(cmd.Flags())
-	if *ktop.k8sFlags.Namespace == "" {
-		*ktop.k8sFlags.Namespace = "default"
+
+	ktop.kubeFlags = genericclioptions.NewConfigFlags(false)
+	ktop.kubeFlags.AddFlags(cmd.Flags())
+	if *ktop.kubeFlags.Namespace == "" {
+		*ktop.kubeFlags.Namespace = "default"
 	}
+
 	return cmd
 }
 
-func (k *ktopCmd) render(items ...termui.Drawable) {
-	k.renderMutex.Lock()
-	defer k.renderMutex.Unlock()
-	termui.Render(items...)
-}
-
-func (k *ktopCmd) run(cmd *cobra.Command, args []string) error {
-	if err := termui.Init(); err != nil {
-		return err
-	}
-	defer termui.Close()
-
-	kubeclients, err := kube.NewKubeClients(k.k8sFlags)
+func (k *ktop) run(cmd *cobra.Command, args []string) error {
+	// setup kubernetes clients
+	clientset, metricsclient, err := k.kubeclient()
 	if err != nil {
 		return err
 	}
 
-	// define queries
+	// setup queries
 	podQuery, err := regexp.Compile(k.podQuery)
 	if err != nil {
 		return err
@@ -118,66 +94,74 @@ func (k *ktopCmd) run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	monitor := ktop.NewMonitor(kubeclients, podQuery, containerQuery, nodeQuery)
-	logo := ui.NewTextField()
-	logo.Text = logoStr
-	logo.TextStyle = termui.NewStyle(termui.ColorWhite, termui.ColorClear, termui.ModifierBold)
-	hint := ui.NewTextField()
-	hint.Text = hintStr
-	hint.TextStyle = termui.NewStyle(termui.Color(244), termui.ColorClear)
+	// setup monitor
+	monitor := monitor.New(
+		*k.kubeFlags.Namespace,
+		clientset,
+		metricsclient,
+		podQuery,
+		containerQuery,
+		nodeQuery,
+	)
 
+	// start termui
+	if err := termui.Init(); err != nil {
+		return err
+	}
+	defer termui.Close()
+
+	// setup grid
 	grid := termui.NewGrid()
 	grid.Set(
-		termui.NewRow(1./6,
-			termui.NewCol(1./2, logo),
-			termui.NewCol(1./2, hint),
-		),
-		termui.NewRow(6./12, monitor.GetPodTable()),
-		termui.NewRow(4./12,
-			termui.NewCol(1./2, monitor.GetCPUGraph()),
-			termui.NewCol(1./2, monitor.GetMemGraph()),
-		),
+		termui.NewRow(1/2, monitor.ResourceTable),
+		termui.NewRow(1/4, monitor.CPUGraph),
+		termui.NewRow(1/4, monitor.MemoryGraph),
 	)
-	termWidth, termHeight := termui.TerminalDimensions()
-	grid.SetRect(0, 0, termWidth, termHeight)
+	width, height := termui.TerminalDimensions()
+	grid.SetRect(0, 0, width, height)
 
-	events := termui.PollEvents()
+	// poll events
+	event := termui.PollEvents()
 	tick := time.NewTicker(k.interval)
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGTERM, os.Interrupt)
+	sig := make(chan os.Signal)
+	signal.Notify(sig, syscall.SIGTERM, os.Interrupt)
 
 	for {
 		select {
-		case <-sigCh:
+		case <-sig:
 			return nil
 		case <-tick.C:
-			if err := monitor.Update(); err != nil {
+			if err := monitor.Sync(); err != nil {
 				return err
 			}
-		case e := <-events:
+
+		case e := <-event:
 			switch e.ID {
-			case "<Down>":
-				monitor.ScrollDown()
-			case "<Up>":
-				monitor.ScrollUp()
-			case "<Right>":
-				monitor.Rotate()
-			case "<Left>":
-				monitor.ReverseRotate()
 			case "q", "<C-c>":
 				return nil
 			case "<Resize>":
-				termWidth, termHeight := termui.TerminalDimensions()
-				grid.SetRect(0, 0, termWidth, termHeight)
+				width, height := termui.TerminalDimensions()
+				grid.SetRect(0, 0, width, height)
 			}
 		}
-		k.render(grid)
+		// k.mu.Lock()
+		// termui.Render(grid)
+		// k.mu.Unlock()
 	}
 }
 
-func Execute() {
-	rootCmd := newKtopCmd()
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
+func (k *ktop) kubeclient() (*kubernetes.Clientset, *versioned.Clientset, error) {
+	config, err := k.kubeFlags.ToRESTConfig()
+	if err != nil {
+		return nil, nil, err
 	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, nil, err
+	}
+	metricsclientset, err := versioned.NewForConfig(config)
+	if err != nil {
+		return nil, nil, err
+	}
+	return clientset, metricsclientset, nil
 }
