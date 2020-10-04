@@ -41,7 +41,7 @@ func (*ResourceTable) Fields(rect image.Rectangle, resources resources.Resources
 	for _, node := range nodes {
 		usage := resources[node].Usage
 		rows = append(rows, []string{
-			node, usage.Cpu().String() + " ", usage.Memory().String() + " ",
+			node, usage.Cpu().String(), usage.Memory().String(),
 		})
 	}
 	return Fields{

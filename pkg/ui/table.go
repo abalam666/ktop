@@ -7,6 +7,12 @@ import (
 	. "github.com/gizak/termui/v3"
 )
 
+const (
+	spaceSizeBetweenBorderAndHeaderHeight = 1
+	spaceSizeBetweenBorderAndHeaderWidth  = 2
+	spaceSizeBetweenBorderAndRowsWidth    = 2
+)
+
 type Table struct {
 	*Block
 
@@ -52,10 +58,13 @@ func (self *Table) Draw(buf *Buffer) {
 
 		// describe a header
 		for i, h := range self.Header {
+			h := TrimString(h, self.ColumnWidths[i]-spaceSizeBetweenBorderAndHeaderWidth+1)
 			buf.SetString(
 				h,
 				NewStyle(Theme.Default.Fg, ColorClear, ModifierBold),
-				image.Pt(self.Inner.Min.X+columnPositions[i], self.Inner.Min.Y),
+				image.Pt(
+					self.Inner.Min.X+columnPositions[i]+spaceSizeBetweenBorderAndHeaderWidth,
+					self.Inner.Min.Y+spaceSizeBetweenBorderAndHeaderHeight),
 			)
 		}
 
@@ -69,7 +78,7 @@ func (self *Table) Draw(buf *Buffer) {
 		for idx := self.topRow; idx >= 0 && idx < len(self.Rows) && idx < self.bottom(); idx++ {
 			row := self.Rows[idx]
 			// move y+1 for a header
-			y := self.Inner.Min.Y + 1 + idx - self.topRow
+			y := self.Inner.Min.Y + 1 + idx - self.topRow + spaceSizeBetweenBorderAndHeaderHeight
 			style := NewStyle(Theme.Default.Fg)
 			if self.Cursor {
 				if idx == self.SelectedRow {
@@ -84,11 +93,11 @@ func (self *Table) Draw(buf *Buffer) {
 				}
 			}
 			for i, width := range self.ColumnWidths {
-				r := TrimString(row[i], width)
+				r := TrimString(row[i], width-spaceSizeBetweenBorderAndRowsWidth+1)
 				buf.SetString(
 					r,
 					style,
-					image.Pt(self.Inner.Min.X+columnPositions[i], y),
+					image.Pt(self.Inner.Min.X+columnPositions[i]+spaceSizeBetweenBorderAndRowsWidth, y),
 				)
 			}
 		}

@@ -3,6 +3,7 @@ package monitor
 import (
 	"errors"
 	"regexp"
+	"sync"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
@@ -15,6 +16,8 @@ import (
 )
 
 type Monitor struct {
+	mu sync.RWMutex
+
 	namespace                           string
 	clientset                           *kubernetes.Clientset
 	metricsclientset                    *versioned.Clientset
@@ -111,4 +114,20 @@ func (m *Monitor) Sync() error {
 			return err
 		}
 	}
+}
+
+func (m *Monitor) ScrollUp() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.ResourceTable.ScrollUp()
+	m.CPUGraph.Reset()
+	m.MemoryGraph.Reset()
+}
+
+func (m *Monitor) ScrollDown() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.ResourceTable.ScrollDown()
+	m.CPUGraph.Reset()
+	m.MemoryGraph.Reset()
 }

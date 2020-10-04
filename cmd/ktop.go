@@ -137,6 +137,10 @@ func (k *ktop) run(cmd *cobra.Command, args []string) error {
 
 		case e := <-event:
 			switch e.ID {
+			case "<Down>":
+				monitor.ScrollDown()
+			case "<Up>":
+				monitor.ScrollUp()
 			case "q", "<C-c>":
 				return nil
 			case "<Resize>":
