@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 
 	"k8s.io/client-go/kubernetes"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/ynqa/ktop/pkg/resources"
 	"github.com/ynqa/ktop/pkg/ui"
+	"github.com/ynqa/ktop/pkg/viewers"
 )
 
 type Monitor struct {
@@ -37,14 +37,15 @@ func New(
 		containerQuery:   containerQuery,
 		nodeQuery:        nodeQuery,
 
-		ResourceTable: newTable(),
+		ResourceTable: newTable("Resources"),
 		CPUGraph:      newGraph("CPU"),
 		MemoryGraph:   newGraph("Memory"),
 	}
 }
 
-func newTable() *ui.Table {
+func newTable(title string) *ui.Table {
 	table := ui.NewTable()
+	table.Title = title
 	table.TitleStyle = termui.NewStyle(termui.ColorWhite, termui.ColorClear, termui.ModifierBold)
 	table.Cursor = true
 	table.BorderStyle = termui.NewStyle(termui.ColorBlue)
@@ -94,7 +95,17 @@ func (m *Monitor) Sync() error {
 			errCh <- errors.New("failed to get resources")
 			return
 		}
-		fmt.Println(data.SortedNodes())
+
+		var viewer viewers.Table
+		if len(data) > 0 {
+			viewer = &viewers.ResourceTable{}
+		} else {
+			viewer = &viewers.EmptyTable{}
+		}
+		fields := viewer.Fields(m.ResourceTable.Inner, data)
+		m.ResourceTable.Header = fields.Headers
+		m.ResourceTable.ColumnWidths = fields.Widths
+		m.ResourceTable.Rows = fields.Rows
 		doneCh <- struct{}{}
 	}()
 
@@ -106,11 +117,4 @@ func (m *Monitor) Sync() error {
 			return err
 		}
 	}
-	// var viewer viewers.Table
-	// viewer = &viewers.EmptyTable{}
-	// fields := viewer.Fields(m.ResourceTable.Inner, data)
-	// m.ResourceTable.Title = fields.Title
-	// m.ResourceTable.Header = fields.Headers
-	// m.ResourceTable.ColumnWidths = fields.Widths
-	// m.ResourceTable.Rows = fields.Rows
 }

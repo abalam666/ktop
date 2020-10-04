@@ -113,9 +113,9 @@ func (k *ktop) run(cmd *cobra.Command, args []string) error {
 	// setup grid
 	grid := termui.NewGrid()
 	grid.Set(
-		termui.NewRow(1/2, monitor.ResourceTable),
-		termui.NewRow(1/4, monitor.CPUGraph),
-		termui.NewRow(1/4, monitor.MemoryGraph),
+		termui.NewRow(1./2, monitor.ResourceTable),
+		termui.NewRow(1./4, monitor.CPUGraph),
+		termui.NewRow(1./4, monitor.MemoryGraph),
 	)
 	width, height := termui.TerminalDimensions()
 	grid.SetRect(0, 0, width, height)
@@ -144,9 +144,9 @@ func (k *ktop) run(cmd *cobra.Command, args []string) error {
 				grid.SetRect(0, 0, width, height)
 			}
 		}
-		// k.mu.Lock()
-		// termui.Render(grid)
-		// k.mu.Unlock()
+		k.mu.Lock()
+		termui.Render(grid)
+		k.mu.Unlock()
 	}
 }
 
