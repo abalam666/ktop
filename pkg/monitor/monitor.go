@@ -65,12 +65,6 @@ func newGraph(title string) *ui.Graph {
 }
 
 func (m *Monitor) Sync() error {
-	defer func() {
-		if p := recover(); p != nil {
-			m.ResourceTable.SelectedRow = 0
-		}
-	}()
-
 	errCh := make(chan error)
 	doneCh := make(chan struct{})
 	dataCh := make(chan resources.Resources)
