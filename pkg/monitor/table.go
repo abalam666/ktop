@@ -1,4 +1,4 @@
-package viewers
+package monitor
 
 import (
 	"image"
@@ -6,35 +6,35 @@ import (
 	"github.com/ynqa/ktop/pkg/resources"
 )
 
-type Table interface {
-	Fields(resources.Resources, image.Rectangle) Fields
+type viewer interface {
+	fields(resources.Resources, image.Rectangle) fields
 }
 
-type Fields struct {
+type fields struct {
 	Headers []string
 	Widths  []int
 	Rows    [][]string
 }
 
-type EmptyTable struct{}
+type emptyviewer struct{}
 
-func (*EmptyTable) Fields(
+func (*emptyviewer) fields(
 	_ resources.Resources,
 	rect image.Rectangle,
-) Fields {
-	return Fields{
+) fields {
+	return fields{
 		Headers: []string{"message"},
 		Widths:  []int{rect.Dx() - 1},
 		Rows:    [][]string{{"no node, pods, and containers"}},
 	}
 }
 
-type ResourceTable struct{}
+type simpleviewer struct{}
 
-func (*ResourceTable) Fields(
+func (*simpleviewer) fields(
 	data resources.Resources,
 	rect image.Rectangle,
-) Fields {
+) fields {
 	headers := []string{
 		"metadata.name", "usage.cpu", "usage.memory",
 	}
@@ -60,7 +60,7 @@ func (*ResourceTable) Fields(
 			}
 		}
 	}
-	return Fields{
+	return fields{
 		Headers: headers,
 		Widths:  widths,
 		Rows:    rows,

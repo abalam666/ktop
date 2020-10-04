@@ -71,7 +71,7 @@ func (self *Table) Draw(buf *Buffer) {
 		if self.SelectedRow < self.topRow {
 			self.topRow = self.SelectedRow
 		} else if self.SelectedRow > self.cursorBottom() {
-			self.topRow = self.cursorBottom()
+			self.topRow = self.cursorBottom() + spaceSizeBetweenBorderAndHeaderHeight
 		}
 
 		// describe rows
@@ -105,11 +105,11 @@ func (self *Table) Draw(buf *Buffer) {
 }
 
 func (self *Table) cursorBottom() int {
-	return self.topRow + self.Inner.Dy() - 2
+	return self.topRow + self.Inner.Dy() - 2 - spaceSizeBetweenBorderAndHeaderHeight
 }
 
 func (self *Table) bottom() int {
-	return self.topRow + self.Inner.Dy() - 1 - spaceSizeBetweenBorderAndRowsWidth
+	return self.topRow + self.Inner.Dy() - 1 - spaceSizeBetweenBorderAndHeaderHeight
 }
 
 func (self *Table) scroll(i int) {

@@ -12,7 +12,6 @@ import (
 
 	"github.com/ynqa/ktop/pkg/resources"
 	"github.com/ynqa/ktop/pkg/ui"
-	"github.com/ynqa/ktop/pkg/viewers"
 )
 
 type Monitor struct {
@@ -93,13 +92,13 @@ func (m *Monitor) Sync() error {
 			return
 		}
 
-		var viewer viewers.Table
+		var viewer viewer
 		if len(data) > 0 {
-			viewer = &viewers.ResourceTable{}
+			viewer = &simpleviewer{}
 		} else {
-			viewer = &viewers.EmptyTable{}
+			viewer = &emptyviewer{}
 		}
-		fields := viewer.Fields(data, m.ResourceTable.Inner)
+		fields := viewer.fields(data, m.ResourceTable.Inner)
 		m.ResourceTable.Header = fields.Headers
 		m.ResourceTable.ColumnWidths = fields.Widths
 		m.ResourceTable.Rows = fields.Rows
