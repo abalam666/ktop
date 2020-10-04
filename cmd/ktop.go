@@ -79,7 +79,7 @@ func newKtopCmd() *cobra.Command {
 		".*",
 		"container query",
 	)
-	ktop.k8sFlags = genericclioptions.NewConfigFlags()
+	ktop.k8sFlags = genericclioptions.NewConfigFlags(false)
 	ktop.k8sFlags.AddFlags(cmd.Flags())
 	if *ktop.k8sFlags.Namespace == "" {
 		*ktop.k8sFlags.Namespace = "default"
