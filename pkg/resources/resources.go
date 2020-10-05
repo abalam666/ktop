@@ -97,7 +97,7 @@ func FetchResources(
 			Pods:        make(map[string]*PodResource),
 			Capacity:    nodeStatus.Capacity,
 			Allocatable: nodeStatus.Allocatable,
-			Usage:       metric.Usage,
+			Usage:       metric.Usage.DeepCopy(),
 		}
 	}
 
@@ -133,9 +133,8 @@ func FetchResources(
 		// investigate all pods (without filtering) to aggregate the usages of their own containers.
 		var cpuperpod, memoryperpod resource.Quantity
 		for _, containerMetric := range podMetric.Containers {
-			cpuperpod.Add(*containerMetric.Usage.Cpu())
-			memoryperpod.Add(*containerMetric.Usage.Memory())
-			containerMetric.Usage.Storage()
+			cpuperpod.Add(containerMetric.Usage.Cpu().DeepCopy())
+			memoryperpod.Add(containerMetric.Usage.Memory().DeepCopy())
 		}
 		data[node].Pods[podMetric.Name] = &PodResource{
 			Namespace:  namespace,
@@ -150,7 +149,7 @@ func FetchResources(
 		podMetric.Containers = matchContainers(containerQuery, podMetric.Containers)
 		for _, containerMetric := range podMetric.Containers {
 			data[node].Pods[podMetric.Name].Containers[containerMetric.Name] = &ContainerResource{
-				Usage: containerMetric.Usage,
+				Usage: containerMetric.Usage.DeepCopy(),
 			}
 		}
 	}
