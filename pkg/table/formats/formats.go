@@ -24,16 +24,31 @@ func withDownArrow(name string, indent int) string {
 	return strings.Repeat(" ", indent) + downArrow + name
 }
 
-func FormatNodeNameField(name string) string {
-	return withRightArrow(name, 0)
+func FormatNodeNameField(name string, childVisible bool) string {
+	if childVisible {
+		return withDownArrow(name, 0)
+	} else {
+		return withRightArrow(name, 0)
+	}
 }
 
-func FormatPodNameField(name string) string {
-	return withRightArrow(name, 1)
+func FormatPodNameField(name string, childVisible bool) string {
+	if childVisible {
+		return withDownArrow(name, 1)
+	} else {
+		return withRightArrow(name, 1)
+	}
 }
 
 func FormatContainerNameField(name string) string {
 	return withSpaces(name, 1)
+}
+
+func TrimString(name string) string {
+	name = strings.TrimLeft(name, " ")
+	name = strings.TrimLeft(name, rightArrow)
+	name = strings.TrimLeft(name, downArrow)
+	return name
 }
 
 func FormatResource(name corev1.ResourceName, list corev1.ResourceList) string {

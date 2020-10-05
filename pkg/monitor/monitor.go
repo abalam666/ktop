@@ -12,6 +12,7 @@ import (
 
 	"github.com/ynqa/ktop/pkg/resources"
 	"github.com/ynqa/ktop/pkg/table"
+	"github.com/ynqa/ktop/pkg/table/formats"
 	"github.com/ynqa/ktop/pkg/table/state"
 	"github.com/ynqa/ktop/pkg/ui"
 )
@@ -24,6 +25,7 @@ type Monitor struct {
 	metricsclientset                    *versioned.Clientset
 	podQuery, containerQuery, nodeQuery *regexp.Regexp
 
+	childVisibleSet       *state.ChildVisibleSet
 	ResourceTable         *ui.Table
 	CPUGraph, MemoryGraph *ui.Graph
 }
@@ -42,9 +44,10 @@ func New(
 		containerQuery:   containerQuery,
 		nodeQuery:        nodeQuery,
 
-		ResourceTable: newTable("Resources"),
-		CPUGraph:      newGraph("CPU"),
-		MemoryGraph:   newGraph("Memory"),
+		childVisibleSet: state.New(),
+		ResourceTable:   newTable("Resources"),
+		CPUGraph:        newGraph("CPU"),
+		MemoryGraph:     newGraph("Memory"),
 	}
 }
 
@@ -95,13 +98,17 @@ func (m *Monitor) Sync() error {
 			return
 		}
 
+		// change ui states
+		m.mu.Lock()
+		defer m.mu.Unlock()
+
 		var creator table.ContentsCreator
 		if len(data) > 0 {
-			creator = &table.Creator{}
+			creator = &table.KubeResourceContentsCreator{}
 		} else {
-			creator = &table.NopCreator{}
+			creator = &table.NoContentsCreator{}
 		}
-		contents := creator.Create(data, &state.VisibleSet{}, m.ResourceTable.Inner)
+		contents := creator.Create(data, m.childVisibleSet, m.ResourceTable.Inner)
 		m.ResourceTable.Header = contents.Headers
 		m.ResourceTable.ColumnWidths = contents.Widths
 		m.ResourceTable.Rows = contents.Rows
@@ -132,4 +139,11 @@ func (m *Monitor) ScrollDown() {
 	m.ResourceTable.ScrollDown()
 	m.CPUGraph.Reset()
 	m.MemoryGraph.Reset()
+}
+
+func (m *Monitor) Enter() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	name := m.ResourceTable.Rows[m.ResourceTable.SelectedRow][0]
+	m.childVisibleSet.Switch(formats.TrimString(name))
 }
