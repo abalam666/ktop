@@ -94,7 +94,7 @@ func FetchResources(
 	for _, metric := range nodeMetrics.Items {
 		nodeStatus := getNodeStatus(metric.Name, nodes.Items)
 		data[metric.Name] = &NodeResource{
-			Pods: make(map[string]*PodResource),
+			Pods:        make(map[string]*PodResource),
 			Capacity:    nodeStatus.Capacity,
 			Allocatable: nodeStatus.Allocatable,
 			Usage:       metric.Usage,
@@ -138,7 +138,7 @@ func FetchResources(
 			containerMetric.Usage.Storage()
 		}
 		data[node].Pods[podMetric.Name] = &PodResource{
-			Namespace: namespace,
+			Namespace:  namespace,
 			Containers: make(map[string]*ContainerResource),
 			Usage: corev1.ResourceList{
 				corev1.ResourceCPU:    cpuperpod,
