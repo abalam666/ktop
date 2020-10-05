@@ -11,6 +11,8 @@ import (
 	"github.com/gizak/termui/v3"
 
 	"github.com/ynqa/ktop/pkg/resources"
+	"github.com/ynqa/ktop/pkg/table"
+	"github.com/ynqa/ktop/pkg/table/state"
 	"github.com/ynqa/ktop/pkg/ui"
 )
 
@@ -93,16 +95,16 @@ func (m *Monitor) Sync() error {
 			return
 		}
 
-		var viewer viewer
+		var creator table.ContentsCreator
 		if len(data) > 0 {
-			viewer = &simpleviewer{}
+			creator = &table.Creator{}
 		} else {
-			viewer = &emptyviewer{}
+			creator = &table.NopCreator{}
 		}
-		fields := viewer.fields(data, m.ResourceTable.Inner)
-		m.ResourceTable.Header = fields.Headers
-		m.ResourceTable.ColumnWidths = fields.Widths
-		m.ResourceTable.Rows = fields.Rows
+		contents := creator.Create(data, &state.VisibleSet{}, m.ResourceTable.Inner)
+		m.ResourceTable.Header = contents.Headers
+		m.ResourceTable.ColumnWidths = contents.Widths
+		m.ResourceTable.Rows = contents.Rows
 		doneCh <- struct{}{}
 	}()
 
