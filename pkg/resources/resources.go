@@ -51,6 +51,7 @@ type NodeResource struct {
 }
 
 type PodResource struct {
+	Namespace  string
 	Containers map[string]*ContainerResource
 	Usage      corev1.ResourceList
 }
@@ -93,12 +94,11 @@ func FetchResources(
 	for _, metric := range nodeMetrics.Items {
 		nodeStatus := getNodeStatus(metric.Name, nodes.Items)
 		data[metric.Name] = &NodeResource{
+			Pods: make(map[string]*PodResource),
 			Capacity:    nodeStatus.Capacity,
 			Allocatable: nodeStatus.Allocatable,
 			Usage:       metric.Usage,
 		}
-		// avoid panic: assignment to entry in nil map
-		data[metric.Name].Pods = make(map[string]*PodResource)
 	}
 
 	// get pods and their metrics
@@ -138,13 +138,13 @@ func FetchResources(
 			containerMetric.Usage.Storage()
 		}
 		data[node].Pods[podMetric.Name] = &PodResource{
+			Namespace: namespace,
+			Containers: make(map[string]*ContainerResource),
 			Usage: corev1.ResourceList{
 				corev1.ResourceCPU:    cpuperpod,
 				corev1.ResourceMemory: memoryperpod,
 			},
 		}
-		// avoid panic: assignment to entry in nil map
-		data[node].Pods[podMetric.Name].Containers = make(map[string]*ContainerResource)
 
 		// but to search them by a given query is required on viewing.
 		podMetric.Containers = matchContainers(containerQuery, podMetric.Containers)
