@@ -43,6 +43,8 @@ func (r Resources) SortedContainers(node, pod string) []string {
 	return res
 }
 
+// - https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable
+// - https://github.com/kubernetes/kubectl/blob/v0.18.8/pkg/describe/describe.go#L3521-L3602
 type NodeResource struct {
 	Pods        map[string]*PodResource
 	Capacity    corev1.ResourceList
