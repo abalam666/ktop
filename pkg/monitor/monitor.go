@@ -141,7 +141,7 @@ func (m *Monitor) ScrollDown() {
 	m.MemoryGraph.Reset()
 }
 
-func (m *Monitor) Enter() {
+func (m *Monitor) SwitchChildVisible() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	name := m.ResourceTable.Rows[m.ResourceTable.SelectedRow][0]
