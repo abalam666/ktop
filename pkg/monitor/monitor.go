@@ -33,6 +33,7 @@ func New(
 	podQuery, containerQuery, nodeQuery *regexp.Regexp,
 ) *Monitor {
 	return &Monitor{
+		namespace:        namespace,
 		clientset:        clientset,
 		metricsclientset: metricsclientset,
 		podQuery:         podQuery,
