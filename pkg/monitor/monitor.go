@@ -98,10 +98,11 @@ func (m *Monitor) Sync() error {
 			return
 		}
 
-		// change ui states
+		// change ui from here!
 		m.mu.Lock()
 		defer m.mu.Unlock()
 
+		// change ui: table section
 		var creator table.ContentsCreator
 		if len(data) > 0 {
 			creator = &table.KubeResourceContentsCreator{}
@@ -112,6 +113,8 @@ func (m *Monitor) Sync() error {
 		m.ResourceTable.Header = contents.Headers
 		m.ResourceTable.ColumnWidths = contents.Widths
 		m.ResourceTable.Rows = contents.Rows
+
+		// TODO: change ui: graph sections
 		doneCh <- struct{}{}
 	}()
 
