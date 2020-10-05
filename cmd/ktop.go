@@ -142,6 +142,8 @@ func (k *ktop) run(cmd *cobra.Command, args []string) error {
 				monitor.ScrollDown()
 			case "<Up>":
 				monitor.ScrollUp()
+			case "r":
+				monitor.Reset()
 			case "q", "<C-c>":
 				return nil
 			case "<Resize>":

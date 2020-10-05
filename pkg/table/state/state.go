@@ -27,6 +27,12 @@ func (s *ChildVisibleSet) Switch(name string) {
 	}
 }
 
+func (s *ChildVisibleSet) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.set = make(map[string]struct{})
+}
+
 func (s *ChildVisibleSet) Contains(name string) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

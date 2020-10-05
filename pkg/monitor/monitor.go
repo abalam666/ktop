@@ -147,3 +147,10 @@ func (m *Monitor) SwitchChildVisible() {
 	name := m.ResourceTable.Rows[m.ResourceTable.SelectedRow][0]
 	m.childVisibleSet.Switch(formats.TrimString(name))
 }
+
+func (m *Monitor) Reset() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.childVisibleSet.Reset()
+	m.ResourceTable.SelectedRow = 0
+}
