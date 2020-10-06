@@ -71,7 +71,7 @@ func (d *Dashboard) Reset() {
 func (d *Dashboard) UpdateTable(
 	shaper table.Shaper,
 	r resources.Resources,
-	state *state.ChildVisibleSet,
+	state *state.TableVisibleSet,
 ) {
 	d.mu.Lock()
 	defer d.mu.Unlock()

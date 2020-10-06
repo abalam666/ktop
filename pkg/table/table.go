@@ -19,7 +19,7 @@ type Contents struct {
 type Shaper interface {
 	Headers() []string
 	Widths(image.Rectangle) []int
-	Rows(resources.Resources, *state.ChildVisibleSet) []ui.Row
+	Rows(resources.Resources, *state.TableVisibleSet) []ui.Row
 }
 
 type NopShaper struct{}
@@ -32,7 +32,7 @@ func (*NopShaper) Widths(rect image.Rectangle) []int {
 	return []int{rect.Dx() - 1}
 }
 
-func (*NopShaper) Rows(resources.Resources, *state.ChildVisibleSet) []ui.Row {
+func (*NopShaper) Rows(resources.Resources, *state.TableVisibleSet) []ui.Row {
 	return []ui.Row{
 		{
 			Elems: []string{"not found: nodes, pods, and containers"},
@@ -55,7 +55,7 @@ func (s *KubeShaper) Widths(rect image.Rectangle) []int {
 	return widths
 }
 
-func (*KubeShaper) Rows(r resources.Resources, state *state.ChildVisibleSet) []ui.Row {
+func (*KubeShaper) Rows(r resources.Resources, state *state.TableVisibleSet) []ui.Row {
 	var rows []ui.Row
 	for _, node := range r.SortedNodes() {
 		usage := r[node].Usage

@@ -128,7 +128,7 @@ func (k *ktop) loop(
 		}
 	}()
 
-	state := state.New()
+	state := state.NewTableVisibleSet()
 	event := termui.PollEvents()
 	doneCh := make(chan struct{})
 
