@@ -18,6 +18,8 @@ import (
 
 	"github.com/ynqa/ktop/pkg/dashboard"
 	"github.com/ynqa/ktop/pkg/resources"
+	"github.com/ynqa/ktop/pkg/state"
+	"github.com/ynqa/ktop/pkg/table"
 )
 
 type ktop struct {
@@ -100,15 +102,13 @@ func (k *ktop) loop(
 
 	errCh := make(chan error)
 	defer close(errCh)
-	doneCh := make(chan struct{})
-	defer close(doneCh)
 
-	// scheduled to fetch resources from kubernetes metrics server.
 	tick := time.NewTicker(k.interval)
 	dataCh := make(chan resources.Resources)
-	defer close(dataCh)
 
+	// scheduled to fetch resources from kubernetes metrics server.
 	go func() {
+		defer close(dataCh)
 		for {
 			select {
 			case <-tick.C:
@@ -122,45 +122,50 @@ func (k *ktop) loop(
 				)
 				if err != nil {
 					errCh <- err
+					return
 				}
 				dataCh <- data
 			}
 		}
 	}()
 
-	go func() {
-		for {
-			select {
-			case <-dataCh:
-				// rendering
-				k.mu.Lock()
-				termui.Render(grid)
-				k.mu.Unlock()
-			}
-		}
-	}()
-
+	state := state.New()
 	event := termui.PollEvents()
+	doneCh := make(chan struct{})
+
 	go func() {
+		defer close(doneCh)
 		for {
 			select {
+			case data := <-dataCh:
+				state.Update(data)
+				var shaper table.Shaper
+				if state.Len() > 0 {
+					shaper = &table.KubeShaper{}
+				} else {
+					shaper = &table.NopShaper{}
+				}
+				dashboard.UpdateTable(state, shaper)
 			case e := <-event:
 				switch e.ID {
 				case "<Enter>":
-					dashboard.SwitchChildVisible()
+					state.Toggle(dashboard.ResourceTable.SelectedRow)
 				case "<Down>":
 					dashboard.ScrollDown()
 				case "<Up>":
 					dashboard.ScrollUp()
-				case "r":
-					dashboard.Reset()
 				case "q", "<C-c>":
 					doneCh <- struct{}{}
+					return
 				case "<Resize>":
 					width, height := termui.TerminalDimensions()
 					grid.SetRect(0, 0, width, height)
 				}
 			}
+			// rendering
+			k.mu.Lock()
+			termui.Render(grid)
+			k.mu.Unlock()
 		}
 	}()
 

@@ -3,84 +3,49 @@ package table
 import (
 	"image"
 
-	corev1 "k8s.io/api/core/v1"
-
-	"github.com/ynqa/ktop/pkg/resources"
-	"github.com/ynqa/ktop/pkg/table/formats"
-	"github.com/ynqa/ktop/pkg/table/state"
+	"github.com/ynqa/ktop/pkg/state"
 )
 
 type Contents struct {
 	Headers []string
 	Widths  []int
-	Rows    [][]string
 }
 
-type ContentsCreator interface {
-	Create(resources.Resources, *state.ChildVisibleSet, image.Rectangle) Contents
+type Shaper interface {
+	Headers() []string
+	Widths(image.Rectangle) []int
+	Rows(*state.ViewState) [][]string
 }
 
-type NoContentsCreator struct{}
+type NopShaper struct{}
 
-func (*NoContentsCreator) Create(_ resources.Resources, _ *state.ChildVisibleSet, rect image.Rectangle) Contents {
-	return Contents{
-		Headers: []string{"message"},
-		Widths:  []int{rect.Dx() - 1},
-		Rows:    [][]string{{"no node, pods, and containers"}},
-	}
+func (*NopShaper) Headers() []string {
+	return []string{"message"}
 }
 
-type KubeResourceContentsCreator struct{}
+func (*NopShaper) Widths(rect image.Rectangle) []int {
+	return []int{rect.Dx() - 1}
+}
 
-func (*KubeResourceContentsCreator) Create(data resources.Resources, childVisibleSet *state.ChildVisibleSet, rect image.Rectangle) Contents {
-	headers := []string{"metadata.name", "usage.cpu", "usage.memory"}
+func (*NopShaper) Rows(*state.ViewState) [][]string {
+	return [][]string{{"not found: nodes, pods, and containers"}}
+}
 
-	// estimate width for columns
+type KubeShaper struct{}
+
+func (*KubeShaper) Headers() []string {
+	return []string{"metadata.name", "usage.cpu", "usage.memory"}
+}
+
+func (s *KubeShaper) Widths(rect image.Rectangle) []int {
 	widths := []int{rect.Dx() / 2}
-	for i := 1; i < len(headers); i++ {
-		denom := 2 * (len(headers) - 1)
+	for i := 1; i < len(s.Headers()); i++ {
+		denom := 2 * (len(s.Headers()) - 1)
 		widths = append(widths, rect.Dx()/denom)
 	}
+	return widths
+}
 
-	// generate rows to view resources
-	var (
-		rows         [][]string
-		childVisible bool
-	)
-	for _, node := range data.SortedNodes() {
-		usage := data[node].Usage
-		childVisible = childVisibleSet.Contains(node)
-		rows = append(rows, []string{
-			formats.FormatNodeNameField(node, childVisible),
-			formats.FormatResource(corev1.ResourceCPU, usage),
-			formats.FormatResource(corev1.ResourceMemory, usage),
-		})
-		if childVisible {
-			for _, pod := range data.SortedPods(node) {
-				usage := data[node].Pods[pod].Usage
-				childVisible = childVisibleSet.Contains(pod)
-				rows = append(rows, []string{
-					formats.FormatPodNameField(pod, childVisible),
-					formats.FormatResource(corev1.ResourceCPU, usage),
-					formats.FormatResource(corev1.ResourceMemory, usage),
-				})
-				if childVisible {
-					for _, container := range data.SortedContainers(node, pod) {
-						usage = data[node].Pods[pod].Containers[container].Usage
-						rows = append(rows, []string{
-							formats.FormatContainerNameField(container),
-							formats.FormatResource(corev1.ResourceCPU, usage),
-							formats.FormatResource(corev1.ResourceMemory, usage),
-						})
-					}
-				}
-			}
-		}
-	}
-
-	return Contents{
-		Headers: headers,
-		Widths:  widths,
-		Rows:    rows,
-	}
+func (*KubeShaper) Rows(state *state.ViewState) [][]string {
+	return state.ToRows()
 }
