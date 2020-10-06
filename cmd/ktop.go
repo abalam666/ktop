@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ynqa/ktop/pkg/dashboard"
+	"github.com/ynqa/ktop/pkg/graph"
 	"github.com/ynqa/ktop/pkg/resources"
 	"github.com/ynqa/ktop/pkg/table"
 )
@@ -92,9 +93,9 @@ func (k *ktop) loop(
 	dashboard := dashboard.New()
 	grid := termui.NewGrid()
 	grid.Set(
-		termui.NewRow(1./2, dashboard.ResourceTable),
-		termui.NewRow(1./4, dashboard.CPUGraph),
-		termui.NewRow(1./4, dashboard.MemoryGraph),
+		termui.NewRow(1./2, dashboard.ResourceTable()),
+		termui.NewRow(1./4, dashboard.CPUGraph()),
+		termui.NewRow(1./4, dashboard.MemoryGraph()),
 	)
 	width, height := termui.TerminalDimensions()
 	grid.SetRect(0, 0, width, height)
@@ -109,11 +110,11 @@ func (k *ktop) loop(
 	errCh := make(chan error)
 
 	tick := time.NewTicker(k.interval)
-	recvTable := make(chan resources.Resources)
+	recv := make(chan resources.Resources)
 
 	// scheduled to fetch resources from kubernetes metrics server.
 	go func() {
-		defer close(recvTable)
+		defer close(recv)
 		for {
 			select {
 			case <-tick.C:
@@ -129,7 +130,7 @@ func (k *ktop) loop(
 					errCh <- err
 					return
 				}
-				go func() { recvTable <- r }()
+				recv <- r
 			}
 		}
 	}()
@@ -139,15 +140,41 @@ func (k *ktop) loop(
 	doneCh := make(chan struct{})
 
 	go func() {
-		for r := range recvTable {
-			var shaper table.Shaper
-			if len(r) > 0 {
-				shaper = &table.KubeShaper{}
-			} else {
-				shaper = &table.NopShaper{}
-			}
-			dashboard.UpdateTable(shaper, r, state)
-			render()
+		for r := range recv {
+			// update table:
+			go func(r resources.Resources) {
+				var shaper table.Shaper
+				if len(r) > 0 {
+					shaper = &table.KubeShaper{}
+				} else {
+					shaper = &table.NopShaper{}
+				}
+				dashboard.UpdateTable(shaper, r, state)
+				render()
+			}(r)
+
+			// update cpu graph:
+			go func(r resources.Resources) {
+				var shaper graph.Shaper
+				if len(r) > 0 {
+					shaper = &table.KubeShaper{}
+				} else {
+					shaper = &table.NopShaper{}
+				}
+				dashboard.UpdateCPUGraph(shaper, r)
+				render()
+			}(r)
+
+			go func(r resources.Resources) {
+				var shaper graph.Shaper
+				if len(r) > 0 {
+					shaper = &table.KubeShaper{}
+				} else {
+					shaper = &table.NopShaper{}
+				}
+				dashboard.UpdateMemoryGraph(shaper, r)
+				render()
+			}(r)
 		}
 	}()
 
@@ -155,8 +182,7 @@ func (k *ktop) loop(
 		for e := range event {
 			switch e.ID {
 			case "<Enter>":
-				name := dashboard.ResourceTable.Rows[dashboard.ResourceTable.SelectedRow].Key
-				state.Toggle(name)
+				state.Toggle(dashboard.CurrentRowKey())
 			case "<Down>":
 				dashboard.ScrollDown()
 			case "<Up>":
@@ -181,7 +207,7 @@ func (k *ktop) loop(
 	for {
 		defer func() {
 			close(sig)
-			close(recvTable)
+			close(recv)
 			close(errCh)
 			close(doneCh)
 		}()

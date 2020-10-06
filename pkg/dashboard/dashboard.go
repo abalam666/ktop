@@ -5,6 +5,7 @@ import (
 
 	"github.com/gizak/termui/v3"
 
+	"github.com/ynqa/ktop/pkg/graph"
 	"github.com/ynqa/ktop/pkg/resources"
 	"github.com/ynqa/ktop/pkg/table"
 	"github.com/ynqa/ktop/pkg/ui"
@@ -12,15 +13,15 @@ import (
 
 type Dashboard struct {
 	mu                    sync.RWMutex
-	ResourceTable         *ui.Table
-	CPUGraph, MemoryGraph *ui.Graph
+	resourcetable         *ui.Table
+	cpugraph, memorygraph *ui.Graph
 }
 
 func New() *Dashboard {
 	return &Dashboard{
-		ResourceTable: newTable("Resources"),
-		CPUGraph:      newGraph("CPU"),
-		MemoryGraph:   newGraph("Memory"),
+		resourcetable: newTable("Resources"),
+		cpugraph:      newGraph("CPU"),
+		memorygraph:   newGraph("Memory"),
 	}
 }
 
@@ -45,26 +46,44 @@ func newGraph(title string) *ui.Graph {
 	return graph
 }
 
+func (d *Dashboard) ResourceTable() *ui.Table {
+	return d.resourcetable
+}
+
+func (d *Dashboard) CPUGraph() *ui.Graph {
+	return d.cpugraph
+}
+
+func (d *Dashboard) MemoryGraph() *ui.Graph {
+	return d.memorygraph
+}
+
+func (d *Dashboard) CurrentRowKey() string {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.resourcetable.Rows[d.resourcetable.SelectedRow].Key
+}
+
 func (d *Dashboard) ScrollUp() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.ResourceTable.ScrollUp()
-	d.CPUGraph.Reset()
-	d.MemoryGraph.Reset()
+	d.resourcetable.ScrollUp()
+	d.cpugraph.Reset()
+	d.memorygraph.Reset()
 }
 
 func (d *Dashboard) ScrollDown() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.ResourceTable.ScrollDown()
-	d.CPUGraph.Reset()
-	d.MemoryGraph.Reset()
+	d.resourcetable.ScrollDown()
+	d.cpugraph.Reset()
+	d.memorygraph.Reset()
 }
 
 func (d *Dashboard) Reset() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.ResourceTable.SelectedRow = 0
+	d.resourcetable.SelectedRow = 0
 }
 
 func (d *Dashboard) UpdateTable(
@@ -74,7 +93,23 @@ func (d *Dashboard) UpdateTable(
 ) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.ResourceTable.Header = shaper.Headers()
-	d.ResourceTable.ColumnWidths = shaper.Widths(d.ResourceTable.Inner)
-	d.ResourceTable.Rows = shaper.Rows(r, state)
+	d.resourcetable.Header = shaper.Headers()
+	d.resourcetable.ColumnWidths = shaper.Widths(d.resourcetable.Inner)
+	d.resourcetable.Rows = shaper.Rows(r, state)
+}
+
+func (d *Dashboard) UpdateCPUGraph(
+	shaper graph.Shaper,
+	r resources.Resources,
+) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+}
+
+func (d *Dashboard) UpdateMemoryGraph(
+	shaper graph.Shaper,
+	r resources.Resources,
+) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 }
