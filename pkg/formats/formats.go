@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	rightArrow = "▶"
-	downArrow  = "▼"
+	rightArrow  = "▶"
+	downArrow   = "▼"
 )
 
 func withSpaces(name string, indent int) string {

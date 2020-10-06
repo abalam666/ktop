@@ -34,7 +34,7 @@ func (*NopShaper) Rows(*state.ViewState) [][]string {
 type KubeShaper struct{}
 
 func (*KubeShaper) Headers() []string {
-	return []string{"metadata.name", "usage.cpu", "usage.memory"}
+	return []string{"name", "namespace", "usage.cpu", "usage.memory"}
 }
 
 func (s *KubeShaper) Widths(rect image.Rectangle) []int {

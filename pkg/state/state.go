@@ -105,18 +105,21 @@ func genrow(c *content, childVisible bool) []string {
 	case Node:
 		row = []string{
 			formats.FormatNodeNameField(c.name, childVisible),
+			c.namespace,
 			formats.FormatResource(corev1.ResourceCPU, c.usage),
 			formats.FormatResource(corev1.ResourceMemory, c.usage),
 		}
 	case Pod:
 		row = []string{
 			formats.FormatPodNameField(c.name, childVisible),
+			c.namespace,
 			formats.FormatResource(corev1.ResourceCPU, c.usage),
 			formats.FormatResource(corev1.ResourceMemory, c.usage),
 		}
 	case Container:
 		row = []string{
 			formats.FormatContainerNameField(c.name),
+			c.namespace,
 			formats.FormatResource(corev1.ResourceCPU, c.usage),
 			formats.FormatResource(corev1.ResourceMemory, c.usage),
 		}
@@ -138,6 +141,7 @@ func gencontents(r resources.Resources) []*content {
 			order = append(order, &content{
 				kind:  Pod,
 				name:  pod,
+				namespace: r[node].Pods[pod].Namespace,
 				usage: r[node].Pods[pod].Usage,
 			})
 			for _, container := range containers {
