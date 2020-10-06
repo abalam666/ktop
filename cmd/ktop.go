@@ -99,6 +99,13 @@ func (k *ktop) loop(
 	width, height := termui.TerminalDimensions()
 	grid.SetRect(0, 0, width, height)
 
+	// rendering
+	render := func() {
+		k.mu.Lock()
+		termui.Render(grid)
+		k.mu.Unlock()
+	}
+
 	errCh := make(chan error)
 
 	tick := time.NewTicker(k.interval)
@@ -140,6 +147,7 @@ func (k *ktop) loop(
 				shaper = &table.NopShaper{}
 			}
 			dashboard.UpdateTable(shaper, r, state)
+			render()
 		}
 	}()
 
@@ -163,10 +171,7 @@ func (k *ktop) loop(
 				width, height := termui.TerminalDimensions()
 				grid.SetRect(0, 0, width, height)
 			}
-			// rendering
-			k.mu.Lock()
-			termui.Render(grid)
-			k.mu.Unlock()
+			render()
 		}
 	}()
 
