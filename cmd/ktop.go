@@ -182,7 +182,7 @@ func (k *ktop) loop(
 		for e := range event {
 			switch e.ID {
 			case "<Enter>":
-				state.Toggle(dashboard.CurrentRowKey())
+				state.Toggle(dashboard.CurrentRow().Key)
 			case "<Down>":
 				dashboard.ScrollDown()
 			case "<Up>":

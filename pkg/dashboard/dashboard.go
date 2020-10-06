@@ -58,10 +58,10 @@ func (d *Dashboard) MemoryGraph() *ui.Graph {
 	return d.memorygraph
 }
 
-func (d *Dashboard) CurrentRowKey() string {
+func (d *Dashboard) CurrentRow() ui.Row {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	return d.resourcetable.Rows[d.resourcetable.SelectedRow].Key
+	return d.resourcetable.Rows[d.resourcetable.SelectedRow]
 }
 
 func (d *Dashboard) ScrollUp() {
