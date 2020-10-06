@@ -8,13 +8,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gizak/termui/v3"
-	"github.com/spf13/cobra"
-	"github.com/ynqa/ktop/pkg/monitor"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
+
+	"github.com/gizak/termui/v3"
+	"github.com/spf13/cobra"
+
+	"github.com/ynqa/ktop/pkg/dashboard"
+	"github.com/ynqa/ktop/pkg/resources"
 )
 
 type ktop struct {
@@ -73,14 +76,120 @@ func New() *cobra.Command {
 	return cmd
 }
 
+func (k *ktop) loop(
+	clientset *kubernetes.Clientset,
+	metricsclientset *versioned.Clientset,
+	podQuery, containerQuery, nodeQuery *regexp.Regexp,
+) error {
+	// start termui
+	if err := termui.Init(); err != nil {
+		return err
+	}
+	defer termui.Close()
+
+	// draw grid
+	dashboard := dashboard.New()
+	grid := termui.NewGrid()
+	grid.Set(
+		termui.NewRow(1./2, dashboard.ResourceTable),
+		termui.NewRow(1./4, dashboard.CPUGraph),
+		termui.NewRow(1./4, dashboard.MemoryGraph),
+	)
+	width, height := termui.TerminalDimensions()
+	grid.SetRect(0, 0, width, height)
+
+	errCh := make(chan error)
+	defer close(errCh)
+	doneCh := make(chan struct{})
+	defer close(doneCh)
+
+	// scheduled to fetch resources from kubernetes metrics server.
+	tick := time.NewTicker(k.interval)
+	dataCh := make(chan resources.Resources)
+	defer close(dataCh)
+
+	go func() {
+		for {
+			select {
+			case <-tick.C:
+				data, err := resources.FetchResources(
+					*k.kubeFlags.Namespace,
+					clientset,
+					metricsclientset,
+					podQuery,
+					containerQuery,
+					nodeQuery,
+				)
+				if err != nil {
+					errCh <- err
+				}
+				dataCh <- data
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			select {
+			case <-dataCh:
+				// rendering
+				k.mu.Lock()
+				termui.Render(grid)
+				k.mu.Unlock()
+			}
+		}
+	}()
+
+	event := termui.PollEvents()
+	go func() {
+		for {
+			select {
+			case e := <-event:
+				switch e.ID {
+				case "<Enter>":
+					dashboard.SwitchChildVisible()
+				case "<Down>":
+					dashboard.ScrollDown()
+				case "<Up>":
+					dashboard.ScrollUp()
+				case "r":
+					dashboard.Reset()
+				case "q", "<C-c>":
+					doneCh <- struct{}{}
+				case "<Resize>":
+					width, height := termui.TerminalDimensions()
+					grid.SetRect(0, 0, width, height)
+				}
+			}
+		}
+	}()
+
+	sig := make(chan os.Signal)
+	defer close(sig)
+	signal.Notify(sig, syscall.SIGTERM, os.Interrupt)
+
+	for {
+		select {
+		case <-sig:
+			return nil
+		case <-doneCh:
+			return nil
+		case err := <-errCh:
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
 func (k *ktop) run(cmd *cobra.Command, args []string) error {
-	// setup kubernetes clients
-	clientset, metricsclient, err := k.kubeclient()
+	// kubernetes clients
+	clientset, metricsclientset, err := k.kubeclient()
 	if err != nil {
 		return err
 	}
 
-	// setup queries
+	// regexp queries
 	podQuery, err := regexp.Compile(k.podQuery)
 	if err != nil {
 		return err
@@ -94,67 +203,13 @@ func (k *ktop) run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// setup monitor
-	monitor := monitor.New(
-		*k.kubeFlags.Namespace,
+	return k.loop(
 		clientset,
-		metricsclient,
+		metricsclientset,
 		podQuery,
 		containerQuery,
 		nodeQuery,
 	)
-
-	// start termui
-	if err := termui.Init(); err != nil {
-		return err
-	}
-	defer termui.Close()
-
-	// setup grid
-	grid := termui.NewGrid()
-	grid.Set(
-		termui.NewRow(1./2, monitor.ResourceTable),
-		termui.NewRow(1./4, monitor.CPUGraph),
-		termui.NewRow(1./4, monitor.MemoryGraph),
-	)
-	width, height := termui.TerminalDimensions()
-	grid.SetRect(0, 0, width, height)
-
-	// poll events
-	event := termui.PollEvents()
-	tick := time.NewTicker(k.interval)
-	sig := make(chan os.Signal)
-	signal.Notify(sig, syscall.SIGTERM, os.Interrupt)
-
-	for {
-		select {
-		case <-sig:
-			return nil
-		case <-tick.C:
-			if err := monitor.Sync(); err != nil {
-				return err
-			}
-		case e := <-event:
-			switch e.ID {
-			case "<Enter>":
-				monitor.SwitchChildVisible()
-			case "<Down>":
-				monitor.ScrollDown()
-			case "<Up>":
-				monitor.ScrollUp()
-			case "r":
-				monitor.Reset()
-			case "q", "<C-c>":
-				return nil
-			case "<Resize>":
-				width, height := termui.TerminalDimensions()
-				grid.SetRect(0, 0, width, height)
-			}
-		}
-		k.mu.Lock()
-		termui.Render(grid)
-		k.mu.Unlock()
-	}
 }
 
 func (k *ktop) kubeclient() (*kubernetes.Clientset, *versioned.Clientset, error) {
