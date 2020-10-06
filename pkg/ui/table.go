@@ -120,9 +120,9 @@ func (self *Table) bottom() int {
 func (self *Table) scroll(i int) {
 	self.SelectedRow += i
 	maxRow := len(self.Rows) - 1
-	if self.SelectedRow < 0 {
-		self.SelectedRow = 0
-	} else if self.SelectedRow > maxRow {
+	if len(self.Rows) > 1 && self.SelectedRow < 0 {
+		self.SelectedRow = maxRow
+	} else if len(self.Rows) > 1 && self.SelectedRow > maxRow {
 		self.SelectedRow = 0
 	}
 }

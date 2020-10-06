@@ -123,7 +123,7 @@ func (k *ktop) loop(
 					errCh <- err
 					return
 				}
-				fetcher <- r
+				go func() { fetcher <- r }()
 			}
 		}
 	}()
