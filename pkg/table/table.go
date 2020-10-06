@@ -2,24 +2,54 @@ package table
 
 import (
 	"image"
+	"sync"
 
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/ynqa/ktop/pkg/formats"
 	"github.com/ynqa/ktop/pkg/resources"
-	"github.com/ynqa/ktop/pkg/state"
 	"github.com/ynqa/ktop/pkg/ui"
 )
 
-type Contents struct {
-	Headers []string
-	Widths  []int
+type VisibleSet struct {
+	mu  sync.RWMutex
+	set map[string]struct{}
+}
+
+func NewVisibleSet() *VisibleSet {
+	return &VisibleSet{
+		set: make(map[string]struct{}),
+	}
+}
+
+func (s *VisibleSet) Contains(name string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	_, ok := s.set[name]
+	return ok
+}
+
+func (s *VisibleSet) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.set = make(map[string]struct{})
+}
+
+func (s *VisibleSet) Toggle(name string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, ok := s.set[name]
+	if ok {
+		delete(s.set, name)
+	} else {
+		s.set[name] = struct{}{}
+	}
 }
 
 type Shaper interface {
 	Headers() []string
 	Widths(image.Rectangle) []int
-	Rows(resources.Resources, *state.TableVisibleSet) []ui.Row
+	Rows(resources.Resources, *VisibleSet) []ui.Row
 }
 
 type NopShaper struct{}
@@ -32,7 +62,7 @@ func (*NopShaper) Widths(rect image.Rectangle) []int {
 	return []int{rect.Dx() - 1}
 }
 
-func (*NopShaper) Rows(resources.Resources, *state.TableVisibleSet) []ui.Row {
+func (*NopShaper) Rows(resources.Resources, *VisibleSet) []ui.Row {
 	return []ui.Row{
 		{
 			Elems: []string{"not found: nodes, pods, and containers"},
@@ -55,7 +85,7 @@ func (s *KubeShaper) Widths(rect image.Rectangle) []int {
 	return widths
 }
 
-func (*KubeShaper) Rows(r resources.Resources, state *state.TableVisibleSet) []ui.Row {
+func (*KubeShaper) Rows(r resources.Resources, state *VisibleSet) []ui.Row {
 	var rows []ui.Row
 	for _, node := range r.SortedNodes() {
 		usage := r[node].Usage

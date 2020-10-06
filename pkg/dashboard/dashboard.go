@@ -6,7 +6,6 @@ import (
 	"github.com/gizak/termui/v3"
 
 	"github.com/ynqa/ktop/pkg/resources"
-	"github.com/ynqa/ktop/pkg/state"
 	"github.com/ynqa/ktop/pkg/table"
 	"github.com/ynqa/ktop/pkg/ui"
 )
@@ -71,7 +70,7 @@ func (d *Dashboard) Reset() {
 func (d *Dashboard) UpdateTable(
 	shaper table.Shaper,
 	r resources.Resources,
-	state *state.TableVisibleSet,
+	state *table.VisibleSet,
 ) {
 	d.mu.Lock()
 	defer d.mu.Unlock()

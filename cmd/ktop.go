@@ -18,7 +18,6 @@ import (
 
 	"github.com/ynqa/ktop/pkg/dashboard"
 	"github.com/ynqa/ktop/pkg/resources"
-	"github.com/ynqa/ktop/pkg/state"
 	"github.com/ynqa/ktop/pkg/table"
 )
 
@@ -128,7 +127,7 @@ func (k *ktop) loop(
 		}
 	}()
 
-	state := state.NewTableVisibleSet()
+	state := table.NewVisibleSet()
 	event := termui.PollEvents()
 	doneCh := make(chan struct{})
 
