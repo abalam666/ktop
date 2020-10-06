@@ -39,13 +39,15 @@ func New() *ViewState {
 }
 
 func (v *ViewState) Len() int {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
 	return len(v.contents)
 }
 
 func (v *ViewState) Update(r resources.Resources) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
-	if v.Len() > 0 {
+	if len(v.contents) > 0 {
 		v.update(gencontents(r))
 		v.contents = gencontents(r)
 	} else {

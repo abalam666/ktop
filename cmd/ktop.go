@@ -101,7 +101,6 @@ func (k *ktop) loop(
 	grid.SetRect(0, 0, width, height)
 
 	errCh := make(chan error)
-	defer close(errCh)
 
 	tick := time.NewTicker(k.interval)
 	dataCh := make(chan resources.Resources)
@@ -134,7 +133,6 @@ func (k *ktop) loop(
 	doneCh := make(chan struct{})
 
 	go func() {
-		defer close(doneCh)
 		for {
 			select {
 			case data := <-dataCh:
@@ -170,10 +168,15 @@ func (k *ktop) loop(
 	}()
 
 	sig := make(chan os.Signal)
-	defer close(sig)
 	signal.Notify(sig, syscall.SIGTERM, os.Interrupt)
 
 	for {
+		defer func() {
+			close(sig)
+			close(dataCh)
+			close(errCh)
+			close(doneCh)
+		}()
 		select {
 		case <-sig:
 			return nil
