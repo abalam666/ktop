@@ -123,7 +123,7 @@ func (self *Table) scroll(i int) {
 	if self.SelectedRow < 0 {
 		self.SelectedRow = 0
 	} else if self.SelectedRow > maxRow {
-		self.SelectedRow = maxRow
+		self.SelectedRow = 0
 	}
 }
 
