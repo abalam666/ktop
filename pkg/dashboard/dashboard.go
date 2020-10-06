@@ -98,18 +98,18 @@ func (d *Dashboard) UpdateTable(
 	d.resourcetable.Rows = shaper.Rows(r, state)
 }
 
-func (d *Dashboard) UpdateCPUGraph(
-	shaper graph.Shaper,
-	r resources.Resources,
-) {
+func (d *Dashboard) UpdateCPUGraph(drawer graph.Drawer) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	if 0 < len(d.resourcetable.Rows) && d.resourcetable.SelectedRow < len(d.resourcetable.Rows) {
+		drawer.Draw(d.cpugraph, d.resourcetable.Rows[d.resourcetable.SelectedRow].Key)
+	}
 }
 
-func (d *Dashboard) UpdateMemoryGraph(
-	shaper graph.Shaper,
-	r resources.Resources,
-) {
+func (d *Dashboard) UpdateMemoryGraph(drawer graph.Drawer) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	if 0 < len(d.resourcetable.Rows) && d.resourcetable.SelectedRow < len(d.resourcetable.Rows) {
+		drawer.Draw(d.memorygraph, d.resourcetable.Rows[d.resourcetable.SelectedRow].Key)
+	}
 }

@@ -114,7 +114,6 @@ func (k *ktop) loop(
 
 	// scheduled to fetch resources from kubernetes metrics server.
 	go func() {
-		defer close(recv)
 		for {
 			select {
 			case <-tick.C:
@@ -155,24 +154,24 @@ func (k *ktop) loop(
 
 			// update cpu graph:
 			go func(r resources.Resources) {
-				var shaper graph.Shaper
+				var drawer graph.Drawer
 				if len(r) > 0 {
-					shaper = &table.KubeShaper{}
+					drawer = &graph.KubeDrawer{}
 				} else {
-					shaper = &table.NopShaper{}
+					drawer = &graph.NopDrawer{}
 				}
-				dashboard.UpdateCPUGraph(shaper, r)
+				dashboard.UpdateCPUGraph(drawer)
 				render()
 			}(r)
 
 			go func(r resources.Resources) {
-				var shaper graph.Shaper
+				var drawer graph.Drawer
 				if len(r) > 0 {
-					shaper = &table.KubeShaper{}
+					drawer = &graph.KubeDrawer{}
 				} else {
-					shaper = &table.NopShaper{}
+					drawer = &graph.NopDrawer{}
 				}
-				dashboard.UpdateMemoryGraph(shaper, r)
+				dashboard.UpdateMemoryGraph(drawer)
 				render()
 			}(r)
 		}
