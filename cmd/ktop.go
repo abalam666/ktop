@@ -103,15 +103,15 @@ func (k *ktop) loop(
 	errCh := make(chan error)
 
 	tick := time.NewTicker(k.interval)
-	dataCh := make(chan resources.Resources)
+	fetcher := make(chan resources.Resources)
 
 	// scheduled to fetch resources from kubernetes metrics server.
 	go func() {
-		defer close(dataCh)
+		defer close(fetcher)
 		for {
 			select {
 			case <-tick.C:
-				data, err := resources.FetchResources(
+				r, err := resources.FetchResources(
 					*k.kubeFlags.Namespace,
 					clientset,
 					metricsclientset,
@@ -123,7 +123,7 @@ func (k *ktop) loop(
 					errCh <- err
 					return
 				}
-				dataCh <- data
+				fetcher <- r
 			}
 		}
 	}()
@@ -135,19 +135,19 @@ func (k *ktop) loop(
 	go func() {
 		for {
 			select {
-			case data := <-dataCh:
-				state.Update(data)
+			case r := <-fetcher:
 				var shaper table.Shaper
-				if state.Len() > 0 {
+				if len(r) > 0 {
 					shaper = &table.KubeShaper{}
 				} else {
 					shaper = &table.NopShaper{}
 				}
-				dashboard.UpdateTable(state, shaper)
+				dashboard.UpdateTable(shaper, r, state)
 			case e := <-event:
 				switch e.ID {
 				case "<Enter>":
-					state.Toggle(dashboard.ResourceTable.SelectedRow)
+					name := dashboard.ResourceTable.Rows[dashboard.ResourceTable.SelectedRow].Key
+					state.Toggle(name)
 				case "<Down>":
 					dashboard.ScrollDown()
 				case "<Up>":
@@ -155,6 +155,9 @@ func (k *ktop) loop(
 				case "q", "<C-c>":
 					doneCh <- struct{}{}
 					return
+				case "r":
+					state.Reset()
+					dashboard.Reset()
 				case "<Resize>":
 					width, height := termui.TerminalDimensions()
 					grid.SetRect(0, 0, width, height)
@@ -173,7 +176,7 @@ func (k *ktop) loop(
 	for {
 		defer func() {
 			close(sig)
-			close(dataCh)
+			close(fetcher)
 			close(errCh)
 			close(doneCh)
 		}()

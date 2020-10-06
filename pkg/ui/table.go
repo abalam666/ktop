@@ -13,12 +13,17 @@ const (
 	spaceSizeBetweenBorderAndRowsWidth    = 2
 )
 
+type Row struct {
+	Key   string
+	Elems []string
+}
+
 type Table struct {
 	*Block
 
 	Header       []string
 	ColumnWidths []int
-	Rows         [][]string
+	Rows         []Row
 	Cursor       bool
 	CursorColor  Color
 	topRow       int
@@ -39,7 +44,7 @@ func (self *Table) Reset(title string, header []string, width []int) {
 	self.Title = title
 	self.Header = header
 	self.ColumnWidths = width
-	self.Rows = [][]string{}
+	self.Rows = []Row{}
 	self.topRow = 0
 	self.SelectedRow = 0
 }
@@ -93,7 +98,7 @@ func (self *Table) Draw(buf *Buffer) {
 				}
 			}
 			for i, width := range self.ColumnWidths {
-				r := TrimString(row[i], width-spaceSizeBetweenBorderAndRowsWidth+1)
+				r := TrimString(row.Elems[i], width-spaceSizeBetweenBorderAndRowsWidth+1)
 				buf.SetString(
 					r,
 					style,

@@ -8,9 +8,21 @@ import (
 )
 
 const (
-	rightArrow  = "▶"
-	downArrow   = "▼"
+	rightArrow = "▶"
+	downArrow  = "▼"
 )
+
+func FormatNodeStateKey(node string) string {
+	return strings.Join([]string{"NODE", node}, "-")
+}
+
+func FormatPodStateKey(node, namespace, pod string) string {
+	return strings.Join([]string{FormatNodeStateKey(node), "POD", namespace, pod}, "-")
+}
+
+func FormatContainerStateKey(node, namespace, pod, container string) string {
+	return strings.Join([]string{FormatPodStateKey(node, namespace, pod), "CONTAINER", container}, "-")
+}
 
 func withSpaces(name string, indent int) string {
 	return strings.Repeat(" ", len(rightArrow)+indent) + name
@@ -42,13 +54,6 @@ func FormatPodNameField(name string, childVisible bool) string {
 
 func FormatContainerNameField(name string) string {
 	return withSpaces(name, 1)
-}
-
-func TrimString(name string) string {
-	name = strings.TrimLeft(name, " ")
-	name = strings.TrimLeft(name, rightArrow)
-	name = strings.TrimLeft(name, downArrow)
-	return name
 }
 
 func FormatResource(name corev1.ResourceName, list corev1.ResourceList) string {
