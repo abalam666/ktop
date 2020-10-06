@@ -103,11 +103,11 @@ func (k *ktop) loop(
 	errCh := make(chan error)
 
 	tick := time.NewTicker(k.interval)
-	fetcher := make(chan resources.Resources)
+	recvTable := make(chan resources.Resources)
 
 	// scheduled to fetch resources from kubernetes metrics server.
 	go func() {
-		defer close(fetcher)
+		defer close(recvTable)
 		for {
 			select {
 			case <-tick.C:
@@ -123,7 +123,7 @@ func (k *ktop) loop(
 					errCh <- err
 					return
 				}
-				go func() { fetcher <- r }()
+				go func() { recvTable <- r }()
 			}
 		}
 	}()
@@ -133,35 +133,36 @@ func (k *ktop) loop(
 	doneCh := make(chan struct{})
 
 	go func() {
-		for {
-			select {
-			case r := <-fetcher:
-				var shaper table.Shaper
-				if len(r) > 0 {
-					shaper = &table.KubeShaper{}
-				} else {
-					shaper = &table.NopShaper{}
-				}
-				dashboard.UpdateTable(shaper, r, state)
-			case e := <-event:
-				switch e.ID {
-				case "<Enter>":
-					name := dashboard.ResourceTable.Rows[dashboard.ResourceTable.SelectedRow].Key
-					state.Toggle(name)
-				case "<Down>":
-					dashboard.ScrollDown()
-				case "<Up>":
-					dashboard.ScrollUp()
-				case "q", "<C-c>":
-					doneCh <- struct{}{}
-					return
-				case "r":
-					state.Reset()
-					dashboard.Reset()
-				case "<Resize>":
-					width, height := termui.TerminalDimensions()
-					grid.SetRect(0, 0, width, height)
-				}
+		for r := range recvTable {
+			var shaper table.Shaper
+			if len(r) > 0 {
+				shaper = &table.KubeShaper{}
+			} else {
+				shaper = &table.NopShaper{}
+			}
+			dashboard.UpdateTable(shaper, r, state)
+		}
+	}()
+
+	go func() {
+		for e := range event {
+			switch e.ID {
+			case "<Enter>":
+				name := dashboard.ResourceTable.Rows[dashboard.ResourceTable.SelectedRow].Key
+				state.Toggle(name)
+			case "<Down>":
+				dashboard.ScrollDown()
+			case "<Up>":
+				dashboard.ScrollUp()
+			case "q", "<C-c>":
+				doneCh <- struct{}{}
+				return
+			case "r":
+				state.Reset()
+				dashboard.Reset()
+			case "<Resize>":
+				width, height := termui.TerminalDimensions()
+				grid.SetRect(0, 0, width, height)
 			}
 			// rendering
 			k.mu.Lock()
@@ -176,7 +177,7 @@ func (k *ktop) loop(
 	for {
 		defer func() {
 			close(sig)
-			close(fetcher)
+			close(recvTable)
 			close(errCh)
 			close(doneCh)
 		}()
