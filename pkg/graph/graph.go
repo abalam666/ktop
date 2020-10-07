@@ -65,7 +65,7 @@ func (*NopDrawer) Draw(g *ui.Graph, _ string) {
 
 type KubeDrawer struct{}
 
-func (*KubeDrawer) Draw(g *ui.Graph, _ string) {
+func (*KubeDrawer) Draw(g *ui.Graph, key string) {
 	g.UpperLimit = 100
 	g.Data = append(g.Data, 50)
 }

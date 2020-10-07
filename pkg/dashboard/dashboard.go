@@ -80,12 +80,6 @@ func (d *Dashboard) ScrollDown() {
 	d.memorygraph.Reset()
 }
 
-func (d *Dashboard) Reset() {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.resourcetable.SelectedRow = 0
-}
-
 func (d *Dashboard) UpdateTable(
 	shaper table.Shaper,
 	r resources.Resources,
@@ -93,8 +87,8 @@ func (d *Dashboard) UpdateTable(
 ) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.resourcetable.Header = shaper.Headers()
-	d.resourcetable.ColumnWidths = shaper.Widths(d.resourcetable.Inner)
+	d.resourcetable.Headers = shaper.Headers()
+	d.resourcetable.Widths = shaper.Widths(d.resourcetable.Inner)
 	d.resourcetable.Rows = shaper.Rows(r, state)
 }
 

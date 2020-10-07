@@ -189,9 +189,6 @@ func (k *ktop) loop(
 			case "q", "<C-c>":
 				doneCh <- struct{}{}
 				return
-			case "r":
-				state.Reset()
-				dashboard.Reset()
 			case "<Resize>":
 				width, height := termui.TerminalDimensions()
 				grid.SetRect(0, 0, width, height)

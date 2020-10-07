@@ -21,12 +21,12 @@ type Row struct {
 type Table struct {
 	*Block
 
-	Header       []string
-	ColumnWidths []int
-	Rows         []Row
-	Cursor       bool
-	CursorColor  Color
-	topRow       int
+	Headers     []string
+	Widths      []int
+	Rows        []Row
+	Cursor      bool
+	CursorColor Color
+	topRow      int
 
 	SelectedRow int
 }
@@ -40,15 +40,6 @@ func NewTable() *Table {
 	}
 }
 
-func (self *Table) Reset(title string, header []string, width []int) {
-	self.Title = title
-	self.Header = header
-	self.ColumnWidths = width
-	self.Rows = []Row{}
-	self.topRow = 0
-	self.SelectedRow = 0
-}
-
 func (self *Table) Draw(buf *Buffer) {
 	self.Block.Draw(buf)
 
@@ -56,14 +47,14 @@ func (self *Table) Draw(buf *Buffer) {
 		// store positions for each column
 		columnPositions := []int{}
 		var cur int
-		for _, w := range self.ColumnWidths {
+		for _, w := range self.Widths {
 			columnPositions = append(columnPositions, cur)
 			cur += w
 		}
 
 		// describe a header
-		for i, h := range self.Header {
-			h := TrimString(h, self.ColumnWidths[i]-spaceSizeBetweenBorderAndHeaderWidth+1)
+		for i, h := range self.Headers {
+			h := TrimString(h, self.Widths[i]-spaceSizeBetweenBorderAndHeaderWidth+1)
 			buf.SetString(
 				h,
 				NewStyle(Theme.Default.Fg, ColorClear, ModifierBold),
@@ -97,7 +88,7 @@ func (self *Table) Draw(buf *Buffer) {
 					self.SelectedRow = idx
 				}
 			}
-			for i, width := range self.ColumnWidths {
+			for i, width := range self.Widths {
 				r := TrimString(row.Elems[i], width-spaceSizeBetweenBorderAndRowsWidth+1)
 				buf.SetString(
 					r,
