@@ -26,24 +26,26 @@ type Table struct {
 	Rows        []Row
 	Cursor      bool
 	CursorColor Color
-	topRow      int
 
 	SelectedRow int
+	DrawInitialRow      int
 }
 
 func NewTable() *Table {
 	return &Table{
 		Block:       NewBlock(),
 		Cursor:      true,
-		topRow:      0,
-		SelectedRow: 0,
 	}
+}
+
+func (self *Table) Drawable() bool {
+	return self.Inner.Dy() >= capSizeTitleAndFirstRow
 }
 
 func (self *Table) Draw(buf *Buffer) {
 	self.Block.Draw(buf)
 
-	if self.drawable() {
+	if self.Drawable() {
 		// store start positions for each column
 		var (
 			colPos []int
@@ -67,17 +69,17 @@ func (self *Table) Draw(buf *Buffer) {
 			)
 		}
 
-		if self.SelectedRow < self.topRow {
-			self.topRow = self.SelectedRow
-		} else if self.SelectedRow > self.cursorBottom() {
-			self.topRow = self.cursorBottom() + spaceSizeFromTopBorder
+		if self.SelectedRow < self.DrawInitialRow {
+			self.DrawInitialRow = self.SelectedRow
+		} else if self.SelectedRow > self.DrawInitialRow + self.Inner.Dy() - capSizeTitleAndFirstRow {
+			self.DrawInitialRow += self.Inner.Dy() - capSizeTitleAndFirstRow + spaceSizeFromTopBorder
 		}
 
-		// describe rows
-		for idx := self.topRow; idx >= 0 && idx < len(self.Rows) && idx <= self.bottom(); idx++ {
+		// draw rows
+		for idx := self.DrawInitialRow; idx >= 0 && idx < len(self.Rows) && idx <= self.DrawInitialRow + self.Inner.Dy() - capSizeTitleAndFirstRow; idx++ {
 			row := self.Rows[idx]
 			// move y+1 for a header
-			y := self.Inner.Min.Y + 1 + idx - self.topRow + spaceSizeFromTopBorder
+			y := self.Inner.Min.Y + 1 + idx - self.DrawInitialRow + spaceSizeFromTopBorder
 			style := NewStyle(Theme.Default.Fg)
 			if self.Cursor {
 				if idx == self.SelectedRow {
@@ -101,18 +103,6 @@ func (self *Table) Draw(buf *Buffer) {
 			}
 		}
 	}
-}
-
-func (self *Table) drawable() bool {
-	return self.Inner.Dy() >= capSizeTitleAndFirstRow
-}
-
-func (self *Table) cursorBottom() int {
-	return self.topRow + self.Inner.Dy() - capSizeTitleAndFirstRow
-}
-
-func (self *Table) bottom() int {
-	return self.topRow + self.Inner.Dy() - capSizeTitleAndFirstRow
 }
 
 func (self *Table) scroll(i int) {
