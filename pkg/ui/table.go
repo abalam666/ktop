@@ -91,7 +91,7 @@ func (self *Table) Draw(buf *Buffer) {
 						style,
 						image.Pt(self.Inner.Min.X, y),
 					)
-					self.SelectedRow = idx
+					self.setselected(idx)
 				}
 			}
 			for i, width := range self.Widths {
@@ -106,20 +106,20 @@ func (self *Table) Draw(buf *Buffer) {
 	}
 }
 
-func (self *Table) scroll(i int) {
-	self.SelectedRow += i
-	maxRow := len(self.Rows) - 1
-	if len(self.Rows) > 1 && self.SelectedRow < 0 {
-		self.SelectedRow = maxRow
-	} else if len(self.Rows) > 1 && self.SelectedRow > maxRow {
+func (self *Table) setselected(idx int) {
+	self.SelectedRow = idx
+	max := len(self.Rows) - 1
+	if max >= 0 && self.SelectedRow < 0 {
+		self.SelectedRow = max
+	} else if max >= 0 && self.SelectedRow > max {
 		self.SelectedRow = 0
 	}
 }
 
 func (self *Table) ScrollUp() {
-	self.scroll(-1)
+	self.setselected(self.SelectedRow - 1)
 }
 
 func (self *Table) ScrollDown() {
-	self.scroll(1)
+	self.setselected(self.SelectedRow + 1)
 }
