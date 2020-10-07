@@ -8,9 +8,8 @@ import (
 )
 
 const (
-	spaceSizeBetweenBorderAndHeaderHeight = 1
-	spaceSizeBetweenBorderAndHeaderWidth  = 2
-	spaceSizeBetweenBorderAndRowsWidth    = 2
+	spaceSizeFromTopBorder  = 1
+	spaceSizeFromLeftBorder = 2
 )
 
 type Row struct {
@@ -54,27 +53,27 @@ func (self *Table) Draw(buf *Buffer) {
 
 		// describe a header
 		for i, h := range self.Headers {
-			h := TrimString(h, self.Widths[i]-spaceSizeBetweenBorderAndHeaderWidth+1)
+			h := TrimString(h, self.Widths[i]-spaceSizeFromLeftBorder+1)
 			buf.SetString(
 				h,
 				NewStyle(Theme.Default.Fg, ColorClear, ModifierBold),
 				image.Pt(
-					self.Inner.Min.X+columnPositions[i]+spaceSizeBetweenBorderAndHeaderWidth,
-					self.Inner.Min.Y+spaceSizeBetweenBorderAndHeaderHeight),
+					self.Inner.Min.X+columnPositions[i]+spaceSizeFromLeftBorder,
+					self.Inner.Min.Y+spaceSizeFromTopBorder),
 			)
 		}
 
 		if self.SelectedRow < self.topRow {
 			self.topRow = self.SelectedRow
 		} else if self.SelectedRow > self.cursorBottom() {
-			self.topRow = self.cursorBottom() + spaceSizeBetweenBorderAndHeaderHeight
+			self.topRow = self.cursorBottom() + spaceSizeFromTopBorder
 		}
 
 		// describe rows
 		for idx := self.topRow; idx >= 0 && idx < len(self.Rows) && idx < self.bottom(); idx++ {
 			row := self.Rows[idx]
 			// move y+1 for a header
-			y := self.Inner.Min.Y + 1 + idx - self.topRow + spaceSizeBetweenBorderAndHeaderHeight
+			y := self.Inner.Min.Y + 1 + idx - self.topRow + spaceSizeFromTopBorder
 			style := NewStyle(Theme.Default.Fg)
 			if self.Cursor {
 				if idx == self.SelectedRow {
@@ -89,11 +88,11 @@ func (self *Table) Draw(buf *Buffer) {
 				}
 			}
 			for i, width := range self.Widths {
-				r := TrimString(row.Elems[i], width-spaceSizeBetweenBorderAndRowsWidth+1)
+				r := TrimString(row.Elems[i], width-spaceSizeFromLeftBorder+1)
 				buf.SetString(
 					r,
 					style,
-					image.Pt(self.Inner.Min.X+columnPositions[i]+spaceSizeBetweenBorderAndRowsWidth, y),
+					image.Pt(self.Inner.Min.X+columnPositions[i]+spaceSizeFromLeftBorder, y),
 				)
 			}
 		}
@@ -101,11 +100,11 @@ func (self *Table) Draw(buf *Buffer) {
 }
 
 func (self *Table) cursorBottom() int {
-	return self.topRow + self.Inner.Dy() - 2 - spaceSizeBetweenBorderAndHeaderHeight
+	return self.topRow + self.Inner.Dy() - 2 - spaceSizeFromTopBorder
 }
 
 func (self *Table) bottom() int {
-	return self.topRow + self.Inner.Dy() - 1 - spaceSizeBetweenBorderAndHeaderHeight
+	return self.topRow + self.Inner.Dy() - 1 - spaceSizeFromTopBorder
 }
 
 func (self *Table) scroll(i int) {
