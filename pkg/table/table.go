@@ -29,12 +29,6 @@ func (s *VisibleSet) Contains(name string) bool {
 	return ok
 }
 
-func (s *VisibleSet) Reset() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.set = make(map[string]struct{})
-}
-
 func (s *VisibleSet) Toggle(name string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
