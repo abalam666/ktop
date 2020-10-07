@@ -42,23 +42,27 @@ func NewTable() *Table {
 func (self *Table) Draw(buf *Buffer) {
 	self.Block.Draw(buf)
 
-	if self.Inner.Dy() > 2 {
-		// store positions for each column
-		columnPositions := []int{}
-		var cur int
+	if self.drawable() {
+
+		// store start positions for each column
+		var (
+			colPos []int
+			cur int = spaceSizeFromLeftBorder
+		)
 		for _, w := range self.Widths {
-			columnPositions = append(columnPositions, cur)
+			colPos = append(colPos, cur)
 			cur += w
 		}
 
-		// describe a header
+		// draw headers
 		for i, h := range self.Headers {
-			h := TrimString(h, self.Widths[i]-spaceSizeFromLeftBorder+1)
+			// replace to '…' if the field is over
+			h := TrimString(h, self.Widths[i] - spaceSizeFromLeftBorder)
 			buf.SetString(
 				h,
 				NewStyle(Theme.Default.Fg, ColorClear, ModifierBold),
 				image.Pt(
-					self.Inner.Min.X+columnPositions[i]+spaceSizeFromLeftBorder,
+					self.Inner.Min.X+colPos[i],
 					self.Inner.Min.Y+spaceSizeFromTopBorder),
 			)
 		}
@@ -88,15 +92,20 @@ func (self *Table) Draw(buf *Buffer) {
 				}
 			}
 			for i, width := range self.Widths {
-				r := TrimString(row.Elems[i], width-spaceSizeFromLeftBorder+1)
+				r := TrimString(row.Elems[i], width-spaceSizeFromLeftBorder)
 				buf.SetString(
 					r,
 					style,
-					image.Pt(self.Inner.Min.X+columnPositions[i]+spaceSizeFromLeftBorder, y),
+					image.Pt(self.Inner.Min.X+colPos[i], y),
 				)
 			}
 		}
 	}
+}
+
+func (self *Table) drawable() bool {
+	sizeTitleAndInitialRow := 2
+	return self.Inner.Dy() > sizeTitleAndInitialRow
 }
 
 func (self *Table) cursorBottom() int {
