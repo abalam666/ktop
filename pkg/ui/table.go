@@ -10,6 +10,7 @@ import (
 const (
 	spaceSizeFromTopBorder  = 1
 	spaceSizeFromLeftBorder = 2
+	capSizeTitleAndFirstRow = 2 + spaceSizeFromTopBorder
 )
 
 type Row struct {
@@ -43,7 +44,6 @@ func (self *Table) Draw(buf *Buffer) {
 	self.Block.Draw(buf)
 
 	if self.drawable() {
-
 		// store start positions for each column
 		var (
 			colPos []int
@@ -74,7 +74,7 @@ func (self *Table) Draw(buf *Buffer) {
 		}
 
 		// describe rows
-		for idx := self.topRow; idx >= 0 && idx < len(self.Rows) && idx < self.bottom(); idx++ {
+		for idx := self.topRow; idx >= 0 && idx < len(self.Rows) && idx <= self.bottom(); idx++ {
 			row := self.Rows[idx]
 			// move y+1 for a header
 			y := self.Inner.Min.Y + 1 + idx - self.topRow + spaceSizeFromTopBorder
@@ -104,16 +104,15 @@ func (self *Table) Draw(buf *Buffer) {
 }
 
 func (self *Table) drawable() bool {
-	sizeTitleAndInitialRow := 2
-	return self.Inner.Dy() > sizeTitleAndInitialRow
+	return self.Inner.Dy() >= capSizeTitleAndFirstRow
 }
 
 func (self *Table) cursorBottom() int {
-	return self.topRow + self.Inner.Dy() - 2 - spaceSizeFromTopBorder
+	return self.topRow + self.Inner.Dy() - capSizeTitleAndFirstRow
 }
 
 func (self *Table) bottom() int {
-	return self.topRow + self.Inner.Dy() - 1 - spaceSizeFromTopBorder
+	return self.topRow + self.Inner.Dy() - capSizeTitleAndFirstRow
 }
 
 func (self *Table) scroll(i int) {
