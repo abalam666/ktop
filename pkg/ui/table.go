@@ -8,10 +8,7 @@ import (
 )
 
 const (
-	heightFromTopBorderToHeader   = 1
-	heightTitle                   = 1
-	heightRow                     = 1
-	widthFromLeftBorderToContents = 2
+	widthFromLeftBorder = 2
 )
 
 type Row struct {
@@ -40,7 +37,8 @@ func NewTable() *Table {
 }
 
 func (self *Table) Drawable() bool {
-	return self.Inner.Dy() >= heightFromTopBorderToHeader+heightTitle+heightRow
+	// consider: space from border + header + initial row = 3
+	return self.Inner.Dy() >= 3
 }
 
 func (self *Table) Draw(buf *Buffer) {
@@ -50,7 +48,7 @@ func (self *Table) Draw(buf *Buffer) {
 		// store start positions for each column
 		var (
 			colPos []int
-			cur    int = widthFromLeftBorderToContents
+			cur    int = widthFromLeftBorder
 		)
 		for _, w := range self.Widths {
 			colPos = append(colPos, cur)
@@ -60,27 +58,29 @@ func (self *Table) Draw(buf *Buffer) {
 		// draw headers
 		for i, h := range self.Headers {
 			// replace to '…' if the field is over
-			h := TrimString(h, self.Widths[i]-widthFromLeftBorderToContents)
+			h := TrimString(h, self.Widths[i]-widthFromLeftBorder)
 			buf.SetString(
 				h,
 				NewStyle(Theme.Default.Fg, ColorClear, ModifierBold),
 				image.Pt(
 					self.Inner.Min.X+colPos[i],
-					self.Inner.Min.Y+heightFromTopBorderToHeader),
+					// consider: space from border = 1
+					self.Inner.Min.Y+1),
 			)
 		}
 
 		if self.SelectedRow < self.DrawInitialRow {
 			self.DrawInitialRow = self.SelectedRow
-		} else if self.SelectedRow >= self.DrawInitialRow+self.Inner.Dy()-(heightFromTopBorderToHeader+heightTitle) {
-			self.DrawInitialRow += self.Inner.Dy() - (heightFromTopBorderToHeader + heightTitle)
+		} else if self.SelectedRow >= self.DrawInitialRow+self.Inner.Dy()-2 {
+			// consider: space from border + header = 2
+			self.DrawInitialRow += self.Inner.Dy() - 2
 		}
 
 		// draw rows
-		for idx := self.DrawInitialRow; idx >= 0 && idx < len(self.Rows) && idx < self.DrawInitialRow+self.Inner.Dy()-(heightFromTopBorderToHeader+heightTitle); idx++ {
+		for idx := self.DrawInitialRow; idx >= 0 && idx < len(self.Rows) && idx < self.DrawInitialRow+self.Inner.Dy()-2; idx++ {
 			row := self.Rows[idx]
-			// move y+1 for a header
-			y := self.Inner.Min.Y + idx - self.DrawInitialRow + heightFromTopBorderToHeader + heightTitle
+			// consider: space from border + header = 2
+			y := self.Inner.Min.Y + idx - self.DrawInitialRow + 2
 			style := NewStyle(Theme.Default.Fg)
 			if self.Cursor {
 				if idx == self.SelectedRow {
@@ -95,7 +95,7 @@ func (self *Table) Draw(buf *Buffer) {
 				}
 			}
 			for i, width := range self.Widths {
-				r := TrimString(row.Elems[i], width-widthFromLeftBorderToContents)
+				r := TrimString(row.Elems[i], width-widthFromLeftBorder)
 				buf.SetString(
 					r,
 					style,
