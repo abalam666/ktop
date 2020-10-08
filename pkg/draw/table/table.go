@@ -40,23 +40,30 @@ func (s *VisibleSet) Toggle(name string) {
 	}
 }
 
-type Shaper interface {
-	Headers() []string
-	Widths(image.Rectangle) []int
-	Rows(resources.Resources, *VisibleSet) []ui.Row
+type Drawer interface {
+	Draw(*ui.Table, resources.Resources, *VisibleSet)
+	headers() []string
+	widths(image.Rectangle) []int
+	rows(resources.Resources, *VisibleSet) []ui.Row
 }
 
-type NopShaper struct{}
+type NopDrawer struct{}
 
-func (*NopShaper) Headers() []string {
+func (d *NopDrawer) Draw(table *ui.Table, r resources.Resources, state *VisibleSet) {
+	table.Headers = d.headers()
+	table.Widths = d.widths(table.Inner)
+	table.Rows = d.rows(r, state)
+}
+
+func (*NopDrawer) headers() []string {
 	return []string{"message"}
 }
 
-func (*NopShaper) Widths(rect image.Rectangle) []int {
+func (*NopDrawer) widths(rect image.Rectangle) []int {
 	return []int{rect.Dx() - 1}
 }
 
-func (*NopShaper) Rows(resources.Resources, *VisibleSet) []ui.Row {
+func (*NopDrawer) rows(resources.Resources, *VisibleSet) []ui.Row {
 	return []ui.Row{
 		{
 			Elems: []string{"not found: nodes, pods, and containers"},
@@ -64,22 +71,28 @@ func (*NopShaper) Rows(resources.Resources, *VisibleSet) []ui.Row {
 	}
 }
 
-type KubeShaper struct{}
+type KubeDrawer struct{}
 
-func (*KubeShaper) Headers() []string {
+func (d *KubeDrawer) Draw(table *ui.Table, r resources.Resources, state *VisibleSet) {
+	table.Headers = d.headers()
+	table.Widths = d.widths(table.Inner)
+	table.Rows = d.rows(r, state)
+}
+
+func (*KubeDrawer) headers() []string {
 	return []string{"name", "namespace", "usage.cpu", "usage.memory"}
 }
 
-func (s *KubeShaper) Widths(rect image.Rectangle) []int {
+func (s *KubeDrawer) widths(rect image.Rectangle) []int {
 	widths := []int{rect.Dx() / 2}
-	for i := 1; i < len(s.Headers()); i++ {
-		denom := 2 * (len(s.Headers()) - 1)
+	for i := 1; i < len(s.headers()); i++ {
+		denom := 2 * (len(s.headers()) - 1)
 		widths = append(widths, rect.Dx()/denom)
 	}
 	return widths
 }
 
-func (*KubeShaper) Rows(r resources.Resources, state *VisibleSet) []ui.Row {
+func (*KubeDrawer) rows(r resources.Resources, state *VisibleSet) []ui.Row {
 	var rows []ui.Row
 	for _, node := range r.SortedNodes() {
 		usage := r[node].Usage

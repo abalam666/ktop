@@ -5,9 +5,9 @@ import (
 
 	"github.com/gizak/termui/v3"
 
-	"github.com/ynqa/ktop/pkg/graph"
+	"github.com/ynqa/ktop/pkg/draw/graph"
+	"github.com/ynqa/ktop/pkg/draw/table"
 	"github.com/ynqa/ktop/pkg/resources"
-	"github.com/ynqa/ktop/pkg/table"
 	"github.com/ynqa/ktop/pkg/ui"
 )
 
@@ -81,15 +81,13 @@ func (d *Dashboard) ScrollDown() {
 }
 
 func (d *Dashboard) UpdateTable(
-	shaper table.Shaper,
+	drawer table.Drawer,
 	r resources.Resources,
 	state *table.VisibleSet,
 ) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.resourcetable.Headers = shaper.Headers()
-	d.resourcetable.Widths = shaper.Widths(d.resourcetable.Inner)
-	d.resourcetable.Rows = shaper.Rows(r, state)
+	drawer.Draw(d.resourcetable, r, state)
 }
 
 func (d *Dashboard) UpdateCPUGraph(drawer graph.Drawer) {

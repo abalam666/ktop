@@ -17,9 +17,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ynqa/ktop/pkg/dashboard"
-	"github.com/ynqa/ktop/pkg/graph"
+	"github.com/ynqa/ktop/pkg/draw/graph"
+	"github.com/ynqa/ktop/pkg/draw/table"
 	"github.com/ynqa/ktop/pkg/resources"
-	"github.com/ynqa/ktop/pkg/table"
 )
 
 type ktop struct {
@@ -142,13 +142,13 @@ func (k *ktop) loop(
 		for r := range recv {
 			// update table:
 			go func(r resources.Resources) {
-				var shaper table.Shaper
+				var drawer table.Drawer
 				if len(r) > 0 {
-					shaper = &table.KubeShaper{}
+					drawer = &table.KubeDrawer{}
 				} else {
-					shaper = &table.NopShaper{}
+					drawer = &table.NopDrawer{}
 				}
-				dashboard.UpdateTable(shaper, r, state)
+				dashboard.UpdateTable(drawer, r, state)
 				render()
 			}(r)
 
