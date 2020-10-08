@@ -12,6 +12,10 @@ const (
 	downArrow  = "▼"
 )
 
+func FormatLabelHeader(name string) string {
+	return fmt.Sprintf("name: %s", name)
+}
+
 func FormatNodeStateKey(node string) string {
 	return strings.Join([]string{"NODE", node}, "-")
 }

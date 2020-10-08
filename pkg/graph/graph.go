@@ -29,17 +29,17 @@ func (s *VisibleSet) Add(r resources.Resources) {
 	for node, noder := range r {
 		nodeKey := formats.FormatNodeStateKey(node)
 		s.set[nodeKey] = item{
-			labelHeader: node,
+			labelHeader: formats.FormatLabelHeader(node),
 		}
 		for pod, podr := range noder.Pods {
 			podKey := formats.FormatPodStateKey(node, podr.Namespace, pod)
 			s.set[podKey] = item{
-				labelHeader: pod,
+				labelHeader: formats.FormatLabelHeader(pod),
 			}
 			for container := range podr.Containers {
 				containerKey := formats.FormatContainerStateKey(node, podr.Namespace, pod, container)
 				s.set[containerKey] = item{
-					labelHeader: container,
+					labelHeader: formats.FormatLabelHeader(container),
 				}
 			}
 		}
@@ -65,7 +65,7 @@ func (*NopDrawer) Draw(g *ui.Graph, _ string) {
 
 type KubeDrawer struct{}
 
-func (*KubeDrawer) Draw(g *ui.Graph, key string) {
+func (d *KubeDrawer) Draw(g *ui.Graph, key string) {
 	g.UpperLimit = 100
 	g.Data = append(g.Data, 50)
 }
