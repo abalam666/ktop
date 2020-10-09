@@ -49,10 +49,7 @@ type Drawer interface {
 
 type NopDrawer struct{}
 
-func (*NopDrawer) Draw(g *ui.Graph, _ Contents, _ string) {
-	g.UpperLimit = 100
-	g.Data = append(g.Data, 50)
-}
+func (*NopDrawer) Draw(g *ui.Graph, _ Contents, _ string) {}
 
 type KubeDrawer struct{}
 
