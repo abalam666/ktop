@@ -134,7 +134,7 @@ func (k *ktop) loop(
 		}
 	}()
 
-	state := table.NewVisibleSet()
+	tableState := table.NewVisibleSet()
 	event := termui.PollEvents()
 	doneCh := make(chan struct{})
 
@@ -148,32 +148,29 @@ func (k *ktop) loop(
 				} else {
 					drawer = &table.NopDrawer{}
 				}
-				dashboard.UpdateTable(drawer, r, state)
+				dashboard.UpdateTable(drawer, r, tableState)
 				render()
 			}(r)
+
+			contents := graph.NewForResources(r)
+			var drawer graph.Drawer
+			if contents.Len() > 0 {
+				drawer = &graph.KubeDrawer{}
+			} else {
+				drawer = &graph.NopDrawer{}
+			}
 
 			// update cpu graph:
-			go func(r resources.Resources) {
-				var drawer graph.Drawer
-				if len(r) > 0 {
-					drawer = &graph.KubeDrawer{}
-				} else {
-					drawer = &graph.NopDrawer{}
-				}
-				dashboard.UpdateCPUGraph(drawer)
+			go func(drawer graph.Drawer, c graph.Contents) {
+				dashboard.UpdateCPUGraph(drawer, c)
 				render()
-			}(r)
+			}(drawer, contents)
 
-			go func(r resources.Resources) {
-				var drawer graph.Drawer
-				if len(r) > 0 {
-					drawer = &graph.KubeDrawer{}
-				} else {
-					drawer = &graph.NopDrawer{}
-				}
-				dashboard.UpdateMemoryGraph(drawer)
+			// update memory graph:
+			go func(drawer graph.Drawer, c graph.Contents) {
+				dashboard.UpdateMemoryGraph(drawer, c)
 				render()
-			}(r)
+			}(drawer, contents)
 		}
 	}()
 
@@ -181,7 +178,7 @@ func (k *ktop) loop(
 		for e := range event {
 			switch e.ID {
 			case "<Enter>":
-				state.Toggle(dashboard.CurrentRow().Key)
+				tableState.Toggle(dashboard.CurrentRow().Key)
 			case "<Down>":
 				dashboard.ScrollDown()
 			case "<Up>":
