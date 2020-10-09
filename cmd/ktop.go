@@ -97,8 +97,12 @@ func (k *ktop) loop(
 		termui.NewRow(1./4, dashboard.CPUGraph()),
 		termui.NewRow(1./4, dashboard.MemoryGraph()),
 	)
-	width, height := termui.TerminalDimensions()
-	grid.SetRect(0, 0, width, height)
+
+	panel := func() {
+		width, height := termui.TerminalDimensions()
+		grid.SetRect(1, 1, width-1, height-1)
+	}
+	panel()
 
 	// rendering
 	render := func() {
@@ -187,8 +191,7 @@ func (k *ktop) loop(
 				doneCh <- struct{}{}
 				return
 			case "<Resize>":
-				width, height := termui.TerminalDimensions()
-				grid.SetRect(0, 0, width, height)
+				panel()
 			}
 			render()
 		}
