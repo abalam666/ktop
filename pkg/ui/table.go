@@ -37,7 +37,7 @@ func NewTable() *Table {
 }
 
 func (self *Table) Drawable() bool {
-	// consider: space from border + header + initial row = 3
+	// coordinates: space from border + header + initial row = 3
 	return self.Inner.Dy() >= 3
 }
 
@@ -64,7 +64,7 @@ func (self *Table) Draw(buf *Buffer) {
 				NewStyle(Theme.Default.Fg, ColorClear, ModifierBold),
 				image.Pt(
 					self.Inner.Min.X+colPos[i],
-					// consider: space from border = 1
+					// coordinates: space from border = 1
 					self.Inner.Min.Y+1),
 			)
 		}
@@ -72,14 +72,14 @@ func (self *Table) Draw(buf *Buffer) {
 		if self.SelectedRow < self.DrawInitialRow {
 			self.DrawInitialRow = self.SelectedRow
 		} else if self.SelectedRow >= self.DrawInitialRow+self.Inner.Dy()-2 {
-			// consider: space from border + header = 2
+			// coordinates: space from border + header = 2
 			self.DrawInitialRow += self.Inner.Dy() - 2
 		}
 
 		// draw rows
 		for idx := self.DrawInitialRow; idx >= 0 && idx < len(self.Rows) && idx < self.DrawInitialRow+self.Inner.Dy()-2; idx++ {
 			row := self.Rows[idx]
-			// consider: space from border + header = 2
+			// coordinates: space from border + header = 2
 			y := self.Inner.Min.Y + idx - self.DrawInitialRow + 2
 			style := NewStyle(Theme.Default.Fg)
 			if self.Cursor {
