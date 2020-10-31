@@ -100,7 +100,7 @@ func (k *ktop) loop(
 
 	panel := func() {
 		width, height := termui.TerminalDimensions()
-		grid.SetRect(1, 1, width-1, height-1)
+		grid.SetRect(0, 1, width, height-1)
 	}
 	panel()
 
