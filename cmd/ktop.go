@@ -17,7 +17,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ynqa/ktop/pkg/dashboard"
-	"github.com/ynqa/ktop/pkg/draw/graph"
 	"github.com/ynqa/ktop/pkg/draw/table"
 	"github.com/ynqa/ktop/pkg/resources"
 )
@@ -138,7 +137,6 @@ func (k *ktop) loop(
 		}
 	}()
 
-	tableState := table.NewVisibleSet()
 	event := termui.PollEvents()
 	doneCh := make(chan struct{})
 
@@ -152,29 +150,29 @@ func (k *ktop) loop(
 				} else {
 					drawer = &table.NopDrawer{}
 				}
-				dashboard.UpdateTable(drawer, r, tableState)
+				dashboard.UpdateTable(drawer, r)
 				render()
 			}(r)
 
-			contents := graph.NewForResources(r)
-			var drawer graph.Drawer
-			if contents.Len() > 0 {
-				drawer = &graph.KubeDrawer{}
-			} else {
-				drawer = &graph.NopDrawer{}
-			}
+			// contents := graph.NewForResources(r)
+			// var drawer graph.Drawer
+			// if contents.Len() > 0 {
+			// 	drawer = &graph.KubeDrawer{}
+			// } else {
+			// 	drawer = &graph.NopDrawer{}
+			// }
 
-			// update cpu graph:
-			go func(drawer graph.Drawer, c graph.Contents) {
-				dashboard.UpdateCPUGraph(drawer, c)
-				render()
-			}(drawer, contents)
+			// // update cpu graph:
+			// go func(drawer graph.Drawer, c graph.Contents) {
+			// 	dashboard.UpdateCPUGraph(drawer, c)
+			// 	render()
+			// }(drawer, contents)
 
-			// update memory graph:
-			go func(drawer graph.Drawer, c graph.Contents) {
-				dashboard.UpdateMemoryGraph(drawer, c)
-				render()
-			}(drawer, contents)
+			// // update memory graph:
+			// go func(drawer graph.Drawer, c graph.Contents) {
+			// 	dashboard.UpdateMemoryGraph(drawer, c)
+			// 	render()
+			// }(drawer, contents)
 		}
 	}()
 
@@ -182,7 +180,7 @@ func (k *ktop) loop(
 		for e := range event {
 			switch e.ID {
 			case "<Enter>":
-				tableState.Toggle(dashboard.CurrentRow().Key)
+				dashboard.Toggle()
 			case "<Down>":
 				dashboard.ScrollDown()
 			case "<Up>":

@@ -2,62 +2,12 @@ package formats
 
 import (
 	"fmt"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 )
 
-const (
-	rightArrow = "▶"
-	downArrow  = "▼"
-)
-
 func FormatLabelHeader(name string) string {
 	return fmt.Sprintf("name: %s", name)
-}
-
-func FormatNodeStateKey(node string) string {
-	return strings.Join([]string{"NODE", node}, "-")
-}
-
-func FormatPodStateKey(node, namespace, pod string) string {
-	return strings.Join([]string{FormatNodeStateKey(node), "POD", namespace, pod}, "-")
-}
-
-func FormatContainerStateKey(node, namespace, pod, container string) string {
-	return strings.Join([]string{FormatPodStateKey(node, namespace, pod), "CONTAINER", container}, "-")
-}
-
-func withSpaces(name string, indent int) string {
-	return strings.Repeat(" ", len(rightArrow)+indent) + name
-}
-
-func withRightArrow(name string, indent int) string {
-	return strings.Repeat(" ", indent) + rightArrow + name
-}
-
-func withDownArrow(name string, indent int) string {
-	return strings.Repeat(" ", indent) + downArrow + name
-}
-
-func FormatNodeNameField(name string, childVisible bool) string {
-	if childVisible {
-		return withDownArrow(name, 0)
-	} else {
-		return withRightArrow(name, 0)
-	}
-}
-
-func FormatPodNameField(name string, childVisible bool) string {
-	if childVisible {
-		return withDownArrow(name, 1)
-	} else {
-		return withRightArrow(name, 1)
-	}
-}
-
-func FormatContainerNameField(name string) string {
-	return withSpaces(name, 1)
 }
 
 func FormatResource(name corev1.ResourceName, list corev1.ResourceList) string {

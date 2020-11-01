@@ -2,57 +2,29 @@ package table
 
 import (
 	"image"
-	"sync"
+
+	"github.com/ynqa/widgets"
+	"github.com/ynqa/widgets/node"
 
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/ynqa/ktop/pkg/formats"
 	"github.com/ynqa/ktop/pkg/resources"
-	"github.com/ynqa/ktop/pkg/ui"
 )
 
-type VisibleSet struct {
-	mu  sync.RWMutex
-	set map[string]struct{}
-}
-
-func NewVisibleSet() *VisibleSet {
-	return &VisibleSet{
-		set: make(map[string]struct{}),
-	}
-}
-
-func (s *VisibleSet) Contains(name string) bool {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	_, ok := s.set[name]
-	return ok
-}
-
-func (s *VisibleSet) Toggle(name string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	_, ok := s.set[name]
-	if ok {
-		delete(s.set, name)
-	} else {
-		s.set[name] = struct{}{}
-	}
-}
-
 type Drawer interface {
-	Draw(*ui.Table, resources.Resources, *VisibleSet)
+	Draw(*widgets.ToggleTable, resources.Resources)
 	headers() []string
 	widths(image.Rectangle) []int
-	rows(resources.Resources, *VisibleSet) []ui.Row
+	node(resources.Resources) *node.Node
 }
 
 type NopDrawer struct{}
 
-func (d *NopDrawer) Draw(table *ui.Table, r resources.Resources, state *VisibleSet) {
+func (d *NopDrawer) Draw(table *widgets.ToggleTable, r resources.Resources) {
 	table.Headers = d.headers()
 	table.Widths = d.widths(table.Inner)
-	table.Rows = d.rows(r, state)
+	table.Node = d.node(r)
 }
 
 func (*NopDrawer) headers() []string {
@@ -63,20 +35,16 @@ func (*NopDrawer) widths(rect image.Rectangle) []int {
 	return []int{rect.Dx() - 1}
 }
 
-func (*NopDrawer) rows(resources.Resources, *VisibleSet) []ui.Row {
-	return []ui.Row{
-		{
-			Elems: []string{"not found: nodes, pods, and containers"},
-		},
-	}
+func (*NopDrawer) node(resources.Resources) *node.Node {
+	return node.New("", []string{"not found: nodes, pods, and containers"})
 }
 
 type KubeDrawer struct{}
 
-func (d *KubeDrawer) Draw(table *ui.Table, r resources.Resources, state *VisibleSet) {
+func (d *KubeDrawer) Draw(table *widgets.ToggleTable, r resources.Resources) {
 	table.Headers = d.headers()
 	table.Widths = d.widths(table.Inner)
-	table.Rows = d.rows(r, state)
+	table.Node = node.ApplyChildVisible(table.Node, d.node(r))
 }
 
 func (*KubeDrawer) headers() []string {
@@ -92,54 +60,38 @@ func (s *KubeDrawer) widths(rect image.Rectangle) []int {
 	return widths
 }
 
-func (*KubeDrawer) rows(r resources.Resources, state *VisibleSet) []ui.Row {
-	var rows []ui.Row
-	for _, node := range r.SortedNodes() {
-		usage := r[node].Usage
-		nodeKey := formats.FormatNodeStateKey(node)
-		childVisible := state.Contains(nodeKey)
-		rows = append(rows, ui.Row{
-			Key: nodeKey,
-			Elems: []string{
-				formats.FormatNodeNameField(node, childVisible),
-				"",
+func (*KubeDrawer) node(r resources.Resources) *node.Node {
+	tree := node.Root()
+	for _, nd := range r.SortedNodes() {
+		usage := r[nd].Usage
+		cursorNode := node.New(nd, []string{
+			nd,
+			"",
+			formats.FormatResource(corev1.ResourceCPU, usage),
+			formats.FormatResource(corev1.ResourceMemory, usage),
+		})
+		tree.Append(cursorNode)
+
+		for _, pd := range r.SortedPods(nd) {
+			usage := r[nd].Pods[pd].Usage
+			cursorPod := node.New(pd, []string{
+				pd,
+				r[nd].Pods[pd].Namespace,
 				formats.FormatResource(corev1.ResourceCPU, usage),
 				formats.FormatResource(corev1.ResourceMemory, usage),
-			},
-		})
-		if childVisible {
-			for _, pod := range r.SortedPods(node) {
-				ns := r[node].Pods[pod].Namespace
-				podKey := formats.FormatPodStateKey(node, ns, pod)
-				usage := r[node].Pods[pod].Usage
-				childVisible := state.Contains(podKey)
-				rows = append(rows, ui.Row{
-					Key: podKey,
-					Elems: []string{
-						formats.FormatPodNameField(pod, childVisible),
-						ns,
-						formats.FormatResource(corev1.ResourceCPU, usage),
-						formats.FormatResource(corev1.ResourceMemory, usage),
-					},
-				})
-				if childVisible {
-					for _, container := range r.SortedContainers(node, pod) {
-						ns := r[node].Pods[pod].Namespace
-						containerKey := formats.FormatContainerStateKey(node, ns, pod, container)
-						usage = r[node].Pods[pod].Containers[container].Usage
-						rows = append(rows, ui.Row{
-							Key: containerKey,
-							Elems: []string{
-								formats.FormatContainerNameField(container),
-								ns,
-								formats.FormatResource(corev1.ResourceCPU, usage),
-								formats.FormatResource(corev1.ResourceMemory, usage),
-							},
-						})
-					}
-				}
+			})
+			cursorNode.Append(cursorPod)
+
+			for _, ct := range r.SortedContainers(nd, pd) {
+				usage = r[nd].Pods[pd].Containers[ct].Usage
+				cursorPod.Append(node.Leaf(ct, []string{
+					ct,
+					"",
+					formats.FormatResource(corev1.ResourceCPU, usage),
+					formats.FormatResource(corev1.ResourceMemory, usage),
+				}))
 			}
 		}
 	}
-	return rows
+	return tree
 }
