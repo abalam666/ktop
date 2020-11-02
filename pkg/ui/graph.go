@@ -9,9 +9,8 @@ import (
 type Graph struct {
 	*Block
 	// plot data
-	Data           []float64
-	UpperLimit     float64
-	DrawUpperLimit bool
+	Data       []float64
+	UpperLimit float64
 
 	// label
 	LabelHeader     string
@@ -51,20 +50,18 @@ func (self *Graph) Draw(buf *Buffer) {
 		canvas := NewCanvas()
 		canvas.Rectangle = self.Inner
 		// draw upper limit
-		if self.DrawUpperLimit {
-			limitHeight := self.calcHeight(self.UpperLimit)
-			canvas.SetLine(
-				image.Pt(
-					self.Inner.Min.X*2,
-					(self.Inner.Max.Y-limitHeight-1)*4,
-				),
-				image.Pt(
-					self.Inner.Max.X*2,
-					(self.Inner.Max.Y-limitHeight-1)*4,
-				),
-				self.LimitColor,
-			)
-		}
+		limitHeight := self.calcHeight(self.UpperLimit)
+		canvas.SetLine(
+			image.Pt(
+				self.Inner.Min.X*2,
+				(self.Inner.Max.Y-limitHeight-1)*4,
+			),
+			image.Pt(
+				self.Inner.Max.X*2,
+				(self.Inner.Max.Y-limitHeight-1)*4,
+			),
+			self.LimitColor,
+		)
 
 		// use latest data
 		data := self.Data

@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ynqa/ktop/pkg/dashboard"
+	"github.com/ynqa/ktop/pkg/draw/graph"
 	"github.com/ynqa/ktop/pkg/draw/table"
 	"github.com/ynqa/ktop/pkg/resources"
 )
@@ -146,25 +147,24 @@ func (k *ktop) loop(
 				termui.Render(grid)
 			}(r)
 
-			// contents := graph.NewForResources(r)
-			// var drawer graph.Drawer
-			// if contents.Len() > 0 {
-			// 	drawer = &graph.KubeDrawer{}
-			// } else {
-			// 	drawer = &graph.NopDrawer{}
-			// }
+			var drawer graph.Drawer
+			if len(r) > 0 {
+				drawer = &graph.KubeDrawer{}
+			} else {
+				drawer = &graph.NopDrawer{}
+			}
 
-			// // update cpu graph:
-			// go func(drawer graph.Drawer, c graph.Contents) {
-			// 	dashboard.UpdateCPUGraph(drawer, c)
-			// 	render()
-			// }(drawer, contents)
+			// update cpu graph:
+			go func(drawer graph.Drawer, r resources.Resources) {
+				dashboard.UpdateCPUGraph(drawer, r)
+				termui.Render(grid)
+			}(drawer, r)
 
-			// // update memory graph:
-			// go func(drawer graph.Drawer, c graph.Contents) {
-			// 	dashboard.UpdateMemoryGraph(drawer, c)
-			// 	render()
-			// }(drawer, contents)
+			// update memory graph:
+			go func(drawer graph.Drawer, r resources.Resources) {
+				dashboard.UpdateMemoryGraph(drawer, r)
+				termui.Render(grid)
+			}(drawer, r)
 		}
 	}()
 

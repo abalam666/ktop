@@ -5,6 +5,7 @@ import (
 
 	"github.com/gizak/termui/v3"
 	"github.com/ynqa/widgets"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/ynqa/ktop/pkg/draw/graph"
 	"github.com/ynqa/ktop/pkg/draw/table"
@@ -38,10 +39,10 @@ func newGraph(title string) *ui.Graph {
 	graph := ui.NewGraph()
 	graph.Title = title
 	graph.TitleStyle = termui.NewStyle(termui.ColorClear)
-	graph.BorderStyle = termui.NewStyle(termui.Color(18))
+	graph.BorderStyle = termui.NewStyle(termui.ColorBlue)
 	graph.LabelNameColor = termui.ColorWhite
 	graph.DataColor = termui.ColorGreen
-	graph.LimitColor = termui.ColorWhite
+	graph.LimitColor = termui.ColorRed
 	return graph
 }
 
@@ -85,19 +86,20 @@ func (d *Dashboard) UpdateTable(drawer table.Drawer, r resources.Resources) {
 	drawer.Draw(d.resourceTable, r)
 }
 
-func (d *Dashboard) UpdateCPUGraph(drawer graph.Drawer, c graph.Contents) {
+func (d *Dashboard) UpdateCPUGraph(drawer graph.Drawer, r resources.Resources) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	// stack := d.resourceTable.Node.Flatten()
-	// if 0 < len(stack) && d.resourceTable.SelectedRow < len(stack) {
-	// 	drawer.Draw(d.cpuGraph, c, d.resourceTable.Rows[d.resourceTable.SelectedRow].Key)
-	// }
+	stack := d.resourceTable.Node.Flatten()
+	if d.resourceTable.SelectedRow < len(stack) {
+		drawer.Draw(d.cpuGraph, r, corev1.ResourceCPU, stack[d.resourceTable.SelectedRow].Parents())
+	}
 }
 
-func (d *Dashboard) UpdateMemoryGraph(drawer graph.Drawer, c graph.Contents) {
+func (d *Dashboard) UpdateMemoryGraph(drawer graph.Drawer, r resources.Resources) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	// if 0 < len(d.resourceTable.Rows) && d.resourceTable.SelectedRow < len(d.resourceTable.Rows) {
-	// 	drawer.Draw(d.memoryGraph, c, d.resourceTable.Rows[d.resourceTable.SelectedRow].Key)
-	// }
+	stack := d.resourceTable.Node.Flatten()
+	if d.resourceTable.SelectedRow < len(stack) {
+		drawer.Draw(d.memoryGraph, r, corev1.ResourceMemory, stack[d.resourceTable.SelectedRow].Parents())
+	}
 }

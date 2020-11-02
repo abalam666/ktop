@@ -1,58 +1,73 @@
 package graph
 
 import (
+	"fmt"
+
+	"github.com/ynqa/widgets/node"
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/ynqa/ktop/pkg/formats"
+	"github.com/ynqa/ktop/pkg/resources"
 	"github.com/ynqa/ktop/pkg/ui"
 )
 
-type item struct {
-	labelHeader string
-}
-
-type Contents struct {
-	set map[string]item
-}
-
-// func NewForResources(r resources.Resources) Contents {
-// 	set := map[string]item{}
-// 	for node, noder := range r {
-// 		nodeKey := formats.FormatNodeStateKey(node)
-// 		set[nodeKey] = item{
-// 			labelHeader: formats.FormatLabelHeader(node),
-// 		}
-// 		for pod, podr := range noder.Pods {
-// 			podKey := formats.FormatPodStateKey(node, podr.Namespace, pod)
-// 			set[podKey] = item{
-// 				labelHeader: formats.FormatLabelHeader(pod),
-// 			}
-// 			for container := range podr.Containers {
-// 				containerKey := formats.FormatContainerStateKey(node, podr.Namespace, pod, container)
-// 				set[containerKey] = item{
-// 					labelHeader: formats.FormatLabelHeader(container),
-// 				}
-// 			}
-// 		}
-// 	}
-// 	return Contents{
-// 		set: set,
-// 	}
-// }
-
-func (c *Contents) Len() int {
-	return len(c.set)
-}
-
 type Drawer interface {
-	Draw(*ui.Graph, Contents, string)
+	Draw(*ui.Graph, resources.Resources, corev1.ResourceName, []*node.Node)
 }
 
 type NopDrawer struct{}
 
-func (*NopDrawer) Draw(g *ui.Graph, _ Contents, _ string) {}
+func (*NopDrawer) Draw(*ui.Graph, resources.Resources, corev1.ResourceName, []*node.Node) {}
 
 type KubeDrawer struct{}
 
-func (d *KubeDrawer) Draw(g *ui.Graph, c Contents, key string) {
-	g.UpperLimit = 100
-	g.Data = append(g.Data, 50)
-	g.LabelHeader = c.set[key].labelHeader
+func (d *KubeDrawer) Draw(g *ui.Graph, r resources.Resources, typ corev1.ResourceName, nodes []*node.Node) {
+	if len(nodes) > 0 {
+		g.LabelHeader = nodes[0].Name()
+
+		labelTmpl := "usage (%v) / allocatable (%v) = %v"
+		if len(nodes) == 1 {
+			node, ok := r[nodes[0].Name()]
+			if ok {
+				g.UpperLimit = float64(formats.FormatResource(typ, node.Allocatable))
+				g.Data = append(g.Data, float64(formats.FormatResource(typ, node.Usage)))
+				g.LabelData = fmt.Sprintf(labelTmpl,
+					formats.FormatResourceString(typ, node.Usage),
+					formats.FormatResourceString(typ, node.Allocatable),
+					formats.FormatResourcePercentage(typ, node.Usage, node.Allocatable),
+				)
+			}
+		} else if len(nodes) == 2 {
+			node, ok := r[nodes[1].Name()]
+			if ok {
+				pod, ok := node.Pods[nodes[0].Name()]
+				if ok {
+					g.UpperLimit = float64(formats.FormatResource(typ, node.Allocatable))
+					g.Data = append(g.Data, float64(formats.FormatResource(typ, pod.Usage)))
+					g.LabelData = fmt.Sprintf(labelTmpl,
+						formats.FormatResourceString(typ, pod.Usage),
+						formats.FormatResourceString(typ, node.Allocatable),
+						formats.FormatResourcePercentage(typ, pod.Usage, node.Allocatable),
+					)
+				}
+			}
+		} else if len(nodes) == 3 {
+			node, ok := r[nodes[2].Name()]
+			if ok {
+				pod, ok := node.Pods[nodes[1].Name()]
+				if ok {
+					container, ok := pod.Containers[nodes[0].Name()]
+					g.Data = append(g.Data, float64(formats.FormatResource(typ, container.Usage)))
+					if ok {
+						g.UpperLimit = float64(formats.FormatResource(typ, node.Allocatable))
+						g.LabelData = fmt.Sprintf(labelTmpl,
+							formats.FormatResourceString(typ, container.Usage),
+							formats.FormatResourceString(typ, node.Allocatable),
+							formats.FormatResourcePercentage(typ, container.Usage, node.Allocatable),
+						)
+					}
+				}
+			}
+		}
+	}
 }

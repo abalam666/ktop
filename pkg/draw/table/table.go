@@ -67,8 +67,8 @@ func (*KubeDrawer) node(r resources.Resources) *node.Node {
 		cursorNode := node.New(nd, []string{
 			nd,
 			"",
-			formats.FormatResource(corev1.ResourceCPU, usage),
-			formats.FormatResource(corev1.ResourceMemory, usage),
+			formats.FormatResourceString(corev1.ResourceCPU, usage),
+			formats.FormatResourceString(corev1.ResourceMemory, usage),
 		})
 		tree.Append(cursorNode)
 
@@ -77,8 +77,8 @@ func (*KubeDrawer) node(r resources.Resources) *node.Node {
 			cursorPod := node.New(pd, []string{
 				pd,
 				r[nd].Pods[pd].Namespace,
-				formats.FormatResource(corev1.ResourceCPU, usage),
-				formats.FormatResource(corev1.ResourceMemory, usage),
+				formats.FormatResourceString(corev1.ResourceCPU, usage),
+				formats.FormatResourceString(corev1.ResourceMemory, usage),
 			})
 			cursorNode.Append(cursorPod)
 
@@ -87,8 +87,8 @@ func (*KubeDrawer) node(r resources.Resources) *node.Node {
 				cursorPod.Append(node.Leaf(ct, []string{
 					ct,
 					"",
-					formats.FormatResource(corev1.ResourceCPU, usage),
-					formats.FormatResource(corev1.ResourceMemory, usage),
+					formats.FormatResourceString(corev1.ResourceCPU, usage),
+					formats.FormatResourceString(corev1.ResourceMemory, usage),
 				}))
 			}
 		}
