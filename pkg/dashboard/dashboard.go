@@ -79,10 +79,7 @@ func (d *Dashboard) ScrollDown() {
 	d.memoryGraph.Reset()
 }
 
-func (d *Dashboard) UpdateTable(
-	drawer table.Drawer,
-	r resources.Resources,
-) {
+func (d *Dashboard) UpdateTable(drawer table.Drawer, r resources.Resources) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	drawer.Draw(d.resourceTable, r)
