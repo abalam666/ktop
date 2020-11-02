@@ -98,7 +98,9 @@ func (k *ktop) loop(
 		width, height := termui.TerminalDimensions()
 		grid.SetRect(0, 1, width, height-1)
 	}
+
 	resizing()
+	termui.Render(grid)
 
 	errCh := make(chan error)
 
