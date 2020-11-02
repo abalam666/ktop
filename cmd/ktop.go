@@ -4,7 +4,6 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
-	"sync"
 	"syscall"
 	"time"
 
@@ -22,8 +21,6 @@ import (
 )
 
 type ktop struct {
-	mu sync.RWMutex
-
 	interval       time.Duration
 	nodeQuery      string
 	podQuery       string
@@ -97,18 +94,11 @@ func (k *ktop) loop(
 		termui.NewRow(1./4, dashboard.MemoryGraph()),
 	)
 
-	panel := func() {
+	resizing := func() {
 		width, height := termui.TerminalDimensions()
 		grid.SetRect(0, 1, width, height-1)
 	}
-	panel()
-
-	// rendering
-	render := func() {
-		k.mu.Lock()
-		termui.Render(grid)
-		k.mu.Unlock()
-	}
+	resizing()
 
 	errCh := make(chan error)
 
@@ -151,7 +141,7 @@ func (k *ktop) loop(
 					drawer = &table.NopDrawer{}
 				}
 				dashboard.UpdateTable(drawer, r)
-				render()
+				termui.Render(grid)
 			}(r)
 
 			// contents := graph.NewForResources(r)
@@ -189,9 +179,9 @@ func (k *ktop) loop(
 				doneCh <- struct{}{}
 				return
 			case "<Resize>":
-				panel()
+				resizing()
 			}
-			render()
+			termui.Render(grid)
 		}
 	}()
 
