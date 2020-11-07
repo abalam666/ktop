@@ -3,7 +3,7 @@ package graph
 import (
 	"fmt"
 
-	"github.com/ynqa/widgets/node"
+	"github.com/ynqa/widgets/pkg/node"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/ynqa/ktop/pkg/formats"

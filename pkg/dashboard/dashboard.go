@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/gizak/termui/v3"
-	"github.com/ynqa/widgets"
+	"github.com/ynqa/widgets/pkg/widgets"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/ynqa/ktop/pkg/draw/graph"

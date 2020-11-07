@@ -3,8 +3,8 @@ package table
 import (
 	"image"
 
-	"github.com/ynqa/widgets"
-	"github.com/ynqa/widgets/node"
+	"github.com/ynqa/widgets/pkg/node"
+	"github.com/ynqa/widgets/pkg/widgets"
 
 	corev1 "k8s.io/api/core/v1"
 
