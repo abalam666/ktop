@@ -53,8 +53,8 @@ func (*KubeDrawer) headers() []string {
 
 func (s *KubeDrawer) widths(rect image.Rectangle) []int {
 	widths := []int{rect.Dx() / 2}
+	denom := 2 * (len(s.headers()) - 1)
 	for i := 1; i < len(s.headers()); i++ {
-		denom := 2 * (len(s.headers()) - 1)
 		widths = append(widths, rect.Dx()/denom)
 	}
 	return widths

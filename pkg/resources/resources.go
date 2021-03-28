@@ -139,7 +139,7 @@ func FetchResources(
 			memoryperpod.Add(containerMetric.Usage.Memory().DeepCopy())
 		}
 		data[node].Pods[podMetric.Name] = &PodResource{
-			Namespace:  namespace,
+			Namespace:  podMetric.Namespace,
 			Containers: make(map[string]*ContainerResource),
 			Usage: corev1.ResourceList{
 				corev1.ResourceCPU:    cpuperpod,

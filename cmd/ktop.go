@@ -26,12 +26,13 @@ type ktop struct {
 	nodeQuery      string
 	podQuery       string
 	containerQuery string
+	allNamespaces  bool
 
 	kubeFlags *genericclioptions.ConfigFlags
 }
 
 func New() *cobra.Command {
-	ktop := ktop{}
+	ktop := &ktop{}
 	cmd := &cobra.Command{
 		Use:   "ktop",
 		Short: "Kubernetes monitoring dashboard on terminal",
@@ -65,12 +66,16 @@ func New() *cobra.Command {
 		".*",
 		"container query",
 	)
+	cmd.Flags().BoolVarP(
+		&ktop.allNamespaces,
+		"all-namespaces",
+		"A",
+		false,
+		"If present, list the requested object(s) across all namespaces.",
+	)
 
 	ktop.kubeFlags = genericclioptions.NewConfigFlags(false)
 	ktop.kubeFlags.AddFlags(cmd.Flags())
-	if *ktop.kubeFlags.Namespace == "" {
-		*ktop.kubeFlags.Namespace = "default"
-	}
 
 	return cmd
 }
@@ -211,6 +216,13 @@ func (k *ktop) loop(
 }
 
 func (k *ktop) run(cmd *cobra.Command, args []string) error {
+	if *k.kubeFlags.Namespace == "" {
+		*k.kubeFlags.Namespace = "default"
+	}
+	if k.allNamespaces {
+		*k.kubeFlags.Namespace = ""
+	}
+
 	// kubernetes clients
 	clientset, metricsclientset, err := k.kubeclient()
 	if err != nil {
