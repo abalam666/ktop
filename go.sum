@@ -270,8 +270,8 @@ github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGr
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
-github.com/ynqa/widgets v0.0.0-20201107162029-9f61ed9a2cbf h1:EMHub0W8bvgkuj3rmWQbXMMBk2k5fI7RVO2500neazU=
-github.com/ynqa/widgets v0.0.0-20201107162029-9f61ed9a2cbf/go.mod h1:YfvZaWqBwn3MGOD83ZKhy5WzDbVUdMgXCse+VzgPvKo=
+github.com/ynqa/widgets v0.0.0-20210402183948-3f32bbef7c39 h1:5elm/E9c+p2AqTIQzvniwn/UCNDNh6zqxIMcTZj6utU=
+github.com/ynqa/widgets v0.0.0-20210402183948-3f32bbef7c39/go.mod h1:YfvZaWqBwn3MGOD83ZKhy5WzDbVUdMgXCse+VzgPvKo=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=

@@ -84,7 +84,7 @@ func (*KubeDrawer) node(r resources.Resources) *node.Node {
 
 			for _, ct := range r.SortedContainers(nd, pd) {
 				usage = r[nd].Pods[pd].Containers[ct].Usage
-				cursorPod.Append(node.Leaf(ct, []string{
+				cursorPod.Append(node.New(ct, []string{
 					ct,
 					"",
 					formats.FormatResourceString(corev1.ResourceCPU, usage),
