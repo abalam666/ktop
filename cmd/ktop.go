@@ -143,7 +143,7 @@ func (k *ktop) loop(
 			// update table:
 			go func(r resources.Resources) {
 				var drawer table.Drawer
-				if len(r) > 0 {
+				if r.Len() > 0 {
 					drawer = &table.KubeDrawer{}
 				} else {
 					drawer = &table.NopDrawer{}
@@ -153,7 +153,7 @@ func (k *ktop) loop(
 			}(r)
 
 			var drawer graph.Drawer
-			if len(r) > 0 {
+			if r.Len() > 0 {
 				drawer = &graph.KubeDrawer{}
 			} else {
 				drawer = &graph.NopDrawer{}
