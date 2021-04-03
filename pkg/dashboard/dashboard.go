@@ -15,20 +15,20 @@ import (
 
 type Dashboard struct {
 	mu                    sync.RWMutex
-	resourceTable         *widgets.ToggleTable
+	table                 *widgets.Table
 	cpuGraph, memoryGraph *ui.Graph
 }
 
 func New() *Dashboard {
 	return &Dashboard{
-		resourceTable: newTable("RESOURCES"),
-		cpuGraph:      newGraph("CPU"),
-		memoryGraph:   newGraph("MEMORY"),
+		table:       newTable("RESOURCES"),
+		cpuGraph:    newGraph("CPU"),
+		memoryGraph: newGraph("MEMORY"),
 	}
 }
 
-func newTable(title string) *widgets.ToggleTable {
-	table := widgets.NewToggleTable()
+func newTable(title string) *widgets.Table {
+	table := widgets.NewTable()
 	table.Title = title
 	table.TitleStyle = termui.NewStyle(termui.ColorClear)
 	table.BorderStyle = termui.NewStyle(termui.ColorBlue)
@@ -40,14 +40,11 @@ func newGraph(title string) *ui.Graph {
 	graph.Title = title
 	graph.TitleStyle = termui.NewStyle(termui.ColorClear)
 	graph.BorderStyle = termui.NewStyle(termui.ColorBlue)
-	graph.LabelNameColor = termui.ColorWhite
-	graph.DataColor = termui.ColorGreen
-	graph.LimitColor = termui.ColorRed
 	return graph
 }
 
-func (d *Dashboard) ResourceTable() *widgets.ToggleTable {
-	return d.resourceTable
+func (d *Dashboard) Table() *widgets.Table {
+	return d.table
 }
 
 func (d *Dashboard) CPUGraph() *ui.Graph {
@@ -61,45 +58,45 @@ func (d *Dashboard) MemoryGraph() *ui.Graph {
 func (d *Dashboard) Toggle() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.resourceTable.Node.Toggle(d.resourceTable.SelectedRow)
+	d.table.Node.Toggle(d.table.SelectedRow)
 }
 
 func (d *Dashboard) ScrollUp() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.resourceTable.ScrollUp()
-	d.cpuGraph.Reset()
-	d.memoryGraph.Reset()
+	d.table.ScrollUp()
+	d.cpuGraph = newGraph("CPU")
+	d.memoryGraph = newGraph("MEMORY")
 }
 
 func (d *Dashboard) ScrollDown() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.resourceTable.ScrollDown()
-	d.cpuGraph.Reset()
-	d.memoryGraph.Reset()
+	d.table.ScrollDown()
+	d.cpuGraph = newGraph("CPU")
+	d.memoryGraph = newGraph("MEMORY")
 }
 
 func (d *Dashboard) UpdateTable(drawer table.Drawer, r resources.Resources) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	drawer.Draw(d.resourceTable, r)
+	drawer.Draw(d.table, r)
 }
 
 func (d *Dashboard) UpdateCPUGraph(drawer graph.Drawer, r resources.Resources) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	stack := d.resourceTable.Node.Flatten()
-	if d.resourceTable.SelectedRow < len(stack) {
-		drawer.Draw(d.cpuGraph, r, corev1.ResourceCPU, stack[d.resourceTable.SelectedRow].Parents())
+	stack := d.table.Node.Flatten()
+	if d.table.SelectedRow < len(stack) {
+		drawer.Draw(d.cpuGraph, r, corev1.ResourceCPU, stack[d.table.SelectedRow].Parents())
 	}
 }
 
 func (d *Dashboard) UpdateMemoryGraph(drawer graph.Drawer, r resources.Resources) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	stack := d.resourceTable.Node.Flatten()
-	if d.resourceTable.SelectedRow < len(stack) {
-		drawer.Draw(d.memoryGraph, r, corev1.ResourceMemory, stack[d.resourceTable.SelectedRow].Parents())
+	stack := d.table.Node.Flatten()
+	if d.table.SelectedRow < len(stack) {
+		drawer.Draw(d.memoryGraph, r, corev1.ResourceMemory, stack[d.table.SelectedRow].Parents())
 	}
 }

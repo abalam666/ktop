@@ -10,14 +10,14 @@ import (
 )
 
 type Drawer interface {
-	Draw(*widgets.ToggleTable, resources.Resources)
+	Draw(*widgets.Table, resources.Resources)
 	headers() []string
 	widths(image.Rectangle) []int
 }
 
 type NopDrawer struct{}
 
-func (d *NopDrawer) Draw(table *widgets.ToggleTable, r resources.Resources) {
+func (d *NopDrawer) Draw(table *widgets.Table, r resources.Resources) {
 	table.Headers = d.headers()
 	table.Widths = d.widths(table.Inner)
 	table.Node = node.New("", []string{"not found: nodes, pods, and containers"})
@@ -37,7 +37,7 @@ func (*NopDrawer) node(resources.Resources) *node.Node {
 
 type KubeDrawer struct{}
 
-func (d *KubeDrawer) Draw(table *widgets.ToggleTable, r resources.Resources) {
+func (d *KubeDrawer) Draw(table *widgets.Table, r resources.Resources) {
 	table.Headers = d.headers()
 	table.Widths = d.widths(table.Inner)
 	table.Node = node.ApplyChildVisible(table.Node, r.GetTree())
