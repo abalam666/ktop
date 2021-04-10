@@ -17,9 +17,14 @@ import (
 
 type NodeResources map[string]*NodeResource
 
+func (r NodeResources) GetNodeResource(node string) (*NodeResource, bool) {
+	res, ok := r[node]
+	return res, ok
+}
+
 func (r NodeResources) GetTree() *node.Node {
 	tree := node.Root()
-	for _, nd := range r.SortedNodes() {
+	for _, nd := range r.sortedNodes() {
 		usage := r[nd].Usage
 		cursorNode := node.New(nd, []string{
 			nd,
@@ -29,7 +34,7 @@ func (r NodeResources) GetTree() *node.Node {
 		})
 		tree.Append(cursorNode)
 
-		for _, pd := range r.SortedPods(nd) {
+		for _, pd := range r.sortedPods(nd) {
 			usage := r[nd].Pods[pd].Usage
 			cursorPod := node.New(pd, []string{
 				pd,
@@ -39,7 +44,7 @@ func (r NodeResources) GetTree() *node.Node {
 			})
 			cursorNode.Append(cursorPod)
 
-			for _, ct := range r.SortedContainers(nd, pd) {
+			for _, ct := range r.sortedContainers(nd, pd) {
 				usage = r[nd].Pods[pd].Containers[ct].Usage
 				cursorPod.Append(node.New(ct, []string{
 					ct,
@@ -57,7 +62,7 @@ func (r NodeResources) Len() int {
 	return len(r)
 }
 
-func (r NodeResources) SortedNodes() []string {
+func (r NodeResources) sortedNodes() []string {
 	var res []string
 	for k := range r {
 		res = append(res, k)
@@ -66,7 +71,7 @@ func (r NodeResources) SortedNodes() []string {
 	return res
 }
 
-func (r NodeResources) SortedPods(node string) []string {
+func (r NodeResources) sortedPods(node string) []string {
 	var res []string
 	for k := range r[node].Pods {
 		res = append(res, k)
@@ -75,7 +80,7 @@ func (r NodeResources) SortedPods(node string) []string {
 	return res
 }
 
-func (r NodeResources) SortedContainers(node, pod string) []string {
+func (r NodeResources) sortedContainers(node, pod string) []string {
 	var res []string
 	for k := range r[node].Pods[pod].Containers {
 		res = append(res, k)

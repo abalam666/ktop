@@ -9,6 +9,7 @@ import (
 )
 
 type Resources interface {
+	GetNodeResource(string) (*NodeResource, bool)
 	GetTree() *node.Node
 	Len() int
 }

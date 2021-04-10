@@ -65,16 +65,16 @@ func (d *Dashboard) ScrollUp() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.table.ScrollUp()
-	d.cpuGraph = newGraph("CPU")
-	d.memoryGraph = newGraph("MEMORY")
+	d.cpuGraph.Reset()
+	d.memoryGraph.Reset()
 }
 
 func (d *Dashboard) ScrollDown() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.table.ScrollDown()
-	d.cpuGraph = newGraph("CPU")
-	d.memoryGraph = newGraph("MEMORY")
+	d.cpuGraph.Reset()
+	d.memoryGraph.Reset()
 }
 
 func (d *Dashboard) UpdateTable(drawer table.Drawer, r resources.Resources) {

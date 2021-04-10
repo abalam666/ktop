@@ -13,60 +13,92 @@ const (
 type Graph struct {
 	*Block
 
-	Header      string
-	HeaderStyle Style
-
-	Elements []Element
+	NodeLimit Straight
+	PodLimit  Straight
+	Usage     Curved
 }
 
-type Element struct {
-	Data  []float64
+type Straight struct {
+	Value float64
 	Label string
 	Style Style
 }
 
+type Curved struct {
+	Values []float64
+	Label  string
+	Style  Style
+}
+
 func NewGraph() *Graph {
 	return &Graph{
-		Block:       NewBlock(),
-		HeaderStyle: NewStyle(Theme.Default.Fg, Theme.Default.Bg, ModifierBold),
+		Block: NewBlock(),
+		Usage: Curved{
+			Values: make([]float64, 0),
+		},
 	}
+}
+
+func (self *Graph) Reset() {
+	self.NodeLimit.Label = ""
+	self.NodeLimit.Value = 0
+	self.PodLimit.Label = ""
+	self.PodLimit.Value = 0
+	self.Usage.Label = ""
+	self.Usage.Values = make([]float64, 0)
+}
+
+func (self *Graph) getY(val float64) int {
+	dy := self.Inner.Max.Y - (self.Inner.Min.Y + 4)
+	return int(float64(self.Inner.Max.Y) - float64(dy)*(val/self.NodeLimit.Value))
 }
 
 func (self *Graph) Draw(buf *Buffer) {
 	self.Block.Draw(buf)
 
+	startPosXForLabel := self.Inner.Min.X + widthFromLeftBorder
+	trimWidth := self.Inner.Max.X - (widthFromLeftBorder + 1)
 	buf.SetString(
-		TrimString(self.Header, self.Inner.Max.X-widthFromLeftBorder),
-		self.HeaderStyle,
-		image.Pt(
-			self.Inner.Min.X+widthFromLeftBorder,
-			self.Inner.Min.Y+1,
-		),
+		TrimString(self.NodeLimit.Label, trimWidth),
+		self.NodeLimit.Style,
+		image.Pt(startPosXForLabel, self.Inner.Min.Y+1),
+	)
+	buf.SetString(
+		TrimString(self.PodLimit.Label, trimWidth),
+		self.PodLimit.Style,
+		image.Pt(startPosXForLabel, self.Inner.Min.Y+2),
+	)
+	buf.SetString(
+		TrimString(self.Usage.Label, trimWidth),
+		self.Usage.Style,
+		image.Pt(startPosXForLabel, self.Inner.Min.Y+3),
 	)
 
-	if len(self.Elements) > 0 {
+	canvas := NewCanvas()
+	canvas.Rectangle = self.Inner
 
-		for i, e := range self.Elements {
-			buf.SetString(
-				e.Label, e.Style,
-				image.Pt(self.Inner.Min.X+2, self.Inner.Min.Y+2+i),
+	canvas.SetLine(
+		image.Pt(self.Inner.Min.X*2, self.getY(self.NodeLimit.Value)*4),
+		image.Pt(self.Inner.Max.X*2, self.getY(self.NodeLimit.Value)*4),
+		self.NodeLimit.Style.Fg,
+	)
+	canvas.SetLine(
+		image.Pt(self.Inner.Min.X*2, self.getY(self.PodLimit.Value)*4),
+		image.Pt(self.Inner.Max.X*2, self.getY(self.PodLimit.Value)*4),
+		self.PodLimit.Style.Fg,
+	)
+
+	if len(self.Usage.Values) > 0 {
+		dest := self.getY(self.Usage.Values[len(self.Usage.Values)-1])
+		for di := len(self.Usage.Values) - 1; di >= 0; di-- {
+			src := self.getY(self.Usage.Values[di])
+			canvas.SetLine(
+				image.Pt((self.Inner.Min.X+di)*2, dest*4),
+				image.Pt((self.Inner.Min.X+di+1)*2, src*4),
+				self.Usage.Style.Fg,
 			)
+			dest = src
 		}
-
-		canvas := NewCanvas()
-		canvas.Rectangle = self.Inner
-		for _, e := range self.Elements {
-			// dest := self.height(ei, r - 1)
-			for di := len(e.Data) - 1; di >= 0; di-- {
-				// src := self.height(ei, di)
-				canvas.SetLine(
-					image.Pt(self.Inner.Min.X+di, 10),
-					image.Pt(self.Inner.Min.X+di+1, 12),
-					e.Style.Fg,
-				)
-				// dest = src
-			}
-		}
-		canvas.Draw(buf)
 	}
+	canvas.Draw(buf)
 }
