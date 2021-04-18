@@ -96,8 +96,8 @@ func (k *ktop) loop(
 	grid := termui.NewGrid()
 	grid.Set(
 		termui.NewRow(1./2, dashboard.Table()),
-		termui.NewRow(1./4, dashboard.CPUGraph()),
-		termui.NewRow(1./4, dashboard.MemoryGraph()),
+		termui.NewRow(1./4, dashboard.CPUGraph().Grid()),
+		termui.NewRow(1./4, dashboard.MemoryGraph().Grid()),
 	)
 
 	resizing := func() {

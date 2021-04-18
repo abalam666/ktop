@@ -31,16 +31,20 @@ func (d *KubeDrawer) Draw(g *ui.Graph, r resources.Resources, typ corev1.Resourc
 		// 	formats.FormatResourcePercentage(typ, node.Usage, node.Allocatable),
 		// )
 		if ok {
-			g.NodeLimit = ui.Straight{
-				Value: float64(formats.FormatResource(typ, node.Allocatable)),
-				Label: fmt.Sprintf("allocatable: %v", formats.FormatResourceString(typ, node.Allocatable)),
-				Style: termui.NewStyle(termui.ColorRed, termui.ColorClear),
-			}
-			g.Usage = ui.Curved{
-				Values: append(g.Usage.Values, float64(formats.FormatResource(typ, node.Usage))),
-				Label:  fmt.Sprintf("usage: %v", formats.FormatResourceString(typ, node.Usage)),
-				Style:  termui.NewStyle(termui.ColorClear, termui.ColorClear),
-			}
+			g.Update([]ui.Data{
+				{
+					Type:  ui.Constant,
+					Value: float64(formats.FormatResource(typ, node.Allocatable)),
+					Label: fmt.Sprintf("allocatable: %v", formats.FormatResourceString(typ, node.Allocatable)),
+					Style: termui.NewStyle(termui.ColorRed, termui.ColorClear),
+				},
+				{
+					Type:  ui.TimeSeries,
+					Value: float64(formats.FormatResource(typ, node.Usage)),
+					Label: fmt.Sprintf("usage: %v", formats.FormatResourceString(typ, node.Usage)),
+					Style: termui.NewStyle(termui.ColorClear, termui.ColorClear),
+				},
+			})
 		}
 	}
 	// else if len(nodes) == 2 {

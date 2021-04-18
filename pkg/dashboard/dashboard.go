@@ -37,9 +37,9 @@ func newTable(title string) *widgets.Table {
 
 func newGraph(title string) *ui.Graph {
 	graph := ui.NewGraph()
-	graph.Title = title
-	graph.TitleStyle = termui.NewStyle(termui.ColorClear)
-	graph.BorderStyle = termui.NewStyle(termui.ColorBlue)
+	graph.SetTitle(title, termui.NewStyle(termui.ColorClear))
+	graph.SetGraphBorderStyle(termui.NewStyle(termui.ColorBlue))
+	graph.SetLabelBorderStyle(termui.NewStyle(termui.ColorBlue))
 	return graph
 }
 
